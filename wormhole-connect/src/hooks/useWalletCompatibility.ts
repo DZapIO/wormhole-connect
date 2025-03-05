@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { Chain } from '@wormhole-foundation/sdk';
 import { WalletData } from '../store/wallet';
-import { type AvailableWallets } from '@aptos-labs/wallet-adapter-core';
 
 export type WalletCompatibilityResult = {
   isCompatible: boolean;
@@ -26,24 +25,24 @@ export const useWalletCompatibility = ({
 
     if (isManualCCTPRoute) {
       // Aptos CCTP requires modern (AIP-62 standard) wallets with support for signing move script transaction types
-      const compatibleWallets: AvailableWallets[] = [
+      // NOTE: This package is missing some of the wallet types, so we're using a string array instead
+      // import { type AvailableWallets } from '@aptos-labs/wallet-adapter-core';
+      const compatibleWallets: string[] = [
         'Petra',
         'Pontem Wallet',
         'Nightly',
+        'Continue with Google',
+        'Continue with Apple',
       ];
       if (
         (sourceChain === 'Aptos' &&
-          !compatibleWallets.includes(
-            sendingWallet.name as AvailableWallets,
-          )) ||
+          !compatibleWallets.includes(sendingWallet.name)) ||
         (destChain === 'Aptos' &&
-          !compatibleWallets.includes(receivingWallet.name as AvailableWallets))
+          !compatibleWallets.includes(receivingWallet.name))
       ) {
         return {
           isCompatible: false,
-          warning: `Please use ${compatibleWallets.join(
-            ' or ',
-          )} with the Aptos CCTP route.`,
+          warning: 'Please use a compatible wallet for this route.',
         };
       }
     }
