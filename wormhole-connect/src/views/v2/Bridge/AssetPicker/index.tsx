@@ -1,29 +1,29 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { makeStyles } from 'tss-react/mui';
+import { Box, Stack, useMediaQuery, useTheme } from '@mui/material';
+import Backdrop from '@mui/material/Backdrop';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Popover from '@mui/material/Popover';
+import SwipeableDrawer from '@mui/material/SwipeableDrawer';
 import {
   usePopupState,
   bindPopover,
   bindTrigger,
 } from 'material-ui-popup-state/hooks';
 import Typography from '@mui/material/Typography';
-
 import DownIcon from '@mui/icons-material/ExpandMore';
 import UpIcon from '@mui/icons-material/ExpandLess';
+import { Chain } from '@wormhole-foundation/sdk';
 
 import config from 'config';
-
 import type { ChainConfig } from 'config/types';
 import type { WalletData } from 'store/wallet';
 import { isDisabledChain } from 'store/transferInput';
 import ChainList from './ChainList';
 import TokenList from './TokenList';
-import { Chain } from '@wormhole-foundation/sdk';
 import AssetBadge from 'components/AssetBadge';
 import { Token } from 'config/tokens';
-import { Backdrop } from '@mui/material';
 import { joinClass } from 'utils/style';
 
 const useStyles = makeStyles()((theme: any) => ({
@@ -73,6 +73,12 @@ const useStyles = makeStyles()((theme: any) => ({
   backdrop: {
     backgroundColor: `rgba(0,0,0,0.2)`,
   },
+  drawer: {
+    background: theme.palette.input.background,
+    borderRadius: '8px',
+    height: 'calc(100vh - 40px)', // Force full-height on small mobile devices with 40px padding at the top
+    maxWidth: '100vw', // Force full-width on small mobile devices
+  },
 }));
 
 type Props = {
@@ -90,7 +96,10 @@ type Props = {
 };
 
 const AssetPicker = (props: Props) => {
+  const theme = useTheme();
+  const mobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [showChainSearch, setShowChainSearch] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { classes } = useStyles();
 
   const popupState = usePopupState({
@@ -99,21 +108,24 @@ const AssetPicker = (props: Props) => {
   });
 
   // Side-effect to reset chain search visibility.
-  // Popover close has an animation, which requires to wait
+  // Popover and drawer close has an animation, which requires to wait
   // a tiny bit before resetting showChainSearch.
   // 300 ms is the reference wait time in a double-click, that's why
   // we can use it as the min wait before user re-opens the popover.
   useEffect(() => {
-    if (!popupState.isOpen) {
+    if ((mobile && !isDrawerOpen) || (!mobile && !popupState.isOpen)) {
       setTimeout(() => {
         setShowChainSearch(false);
       }, 300);
     }
-  }, [popupState.isOpen]);
+  }, [isDrawerOpen, mobile, popupState.isOpen]);
 
   // Pre-selecting first allowed chain, when asset picker is opened
   useEffect(() => {
-    if (popupState.isOpen && !props.chain) {
+    if (
+      (mobile && isDrawerOpen && !props.chain) ||
+      (!mobile && popupState.isOpen && !props.chain)
+    ) {
       const firstAllowedChain = props.chainList.find(
         (chain) => !isDisabledChain(chain.key, props.wallet),
       );
@@ -121,9 +133,9 @@ const AssetPicker = (props: Props) => {
         props.setChain(firstAllowedChain.key);
       }
     }
-    // Re-run only when popup state changes
+    // Re-run only when popup/drawer state changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [popupState.isOpen]);
+  }, [mobile, isDrawerOpen, popupState.isOpen]);
 
   const chainConfig: ChainConfig | undefined = useMemo(() => {
     return props.chain ? config.chains[props.chain] : undefined;
@@ -167,9 +179,8 @@ const AssetPicker = (props: Props) => {
     );
   }, [chainConfig, props.token]);
 
-  const triggerProps = props.isTransactionInProgress
-    ? {}
-    : bindTrigger(popupState);
+  const triggerProps =
+    props.isTransactionInProgress || mobile ? {} : bindTrigger(popupState);
 
   return (
     <>
@@ -181,8 +192,20 @@ const AssetPicker = (props: Props) => {
           props.isTransactionInProgress && classes.disabled,
         ])}
         variant="elevation"
-        onMouseDown={popupState.open}
-        onTouchStart={popupState.open}
+        onMouseDown={(e) => {
+          if (mobile) {
+            setIsDrawerOpen(true);
+          } else {
+            popupState.open(e);
+          }
+        }}
+        onTouchStart={(e) => {
+          if (mobile) {
+            setIsDrawerOpen(true);
+          } else {
+            popupState.open(e);
+          }
+        }}
         {...triggerProps}
       >
         <CardContent className={classes.cardContent}>
@@ -194,54 +217,110 @@ const AssetPicker = (props: Props) => {
             <AssetBadge chainConfig={chainConfig} token={props.token} />
             {selection}
           </Typography>
-          {popupState.isOpen ? <UpIcon /> : <DownIcon />}
+          {popupState.isOpen || isDrawerOpen ? <UpIcon /> : <DownIcon />}
         </CardContent>
       </Card>
-      <Popover
-        {...bindPopover(popupState)}
-        transitionDuration={200}
-        anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'center',
-        }}
-        className={classes.popover}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'center',
-        }}
-        marginThreshold={4}
-        slotProps={{
-          paper: {
-            className: classes.popoverSlot,
-          },
-        }}
-      >
-        <ChainList
-          chainList={props.chainList}
-          selectedChainConfig={chainConfig}
-          showSearch={showChainSearch}
-          setShowSearch={setShowChainSearch}
-          wallet={props.wallet}
-          onChainSelect={(key) => {
-            props.setChain(key);
+      {mobile ? (
+        <SwipeableDrawer
+          anchor="bottom"
+          open={isDrawerOpen}
+          PaperProps={{
+            className: classes.drawer,
           }}
-        />
-        {!showChainSearch && chainConfig && (
-          <TokenList
-            tokenList={props.tokenList}
-            isFetching={props.isFetching}
+          transitionDuration={{
+            enter: 200,
+            exit: 200,
+            appear: 200,
+          }}
+          onOpen={() => setIsDrawerOpen(true)}
+          onClose={() => setIsDrawerOpen(false)}
+        >
+          <Stack alignItems="center" paddingBottom="4px" paddingTop="8px">
+            <Box
+              sx={{
+                width: '40px',
+                height: '5px',
+                backgroundColor: theme.palette.text.secondary,
+                borderRadius: '8px',
+              }}
+            ></Box>
+          </Stack>
+          <ChainList
+            chainList={props.chainList}
             selectedChainConfig={chainConfig}
-            selectedToken={props.token}
-            sourceToken={props.sourceToken}
+            showSearch={showChainSearch}
+            setShowSearch={setShowChainSearch}
             wallet={props.wallet}
-            onSelectToken={(key: Token) => {
-              props.setToken(key);
-              popupState.close();
+            onChainSelect={(key) => {
+              props.setChain(key);
             }}
-            isSource={props.isSource}
           />
-        )}
-      </Popover>
+          {!showChainSearch && chainConfig && (
+            <TokenList
+              tokenList={props.tokenList}
+              isFetching={props.isFetching}
+              selectedChainConfig={chainConfig}
+              selectedToken={props.token}
+              sourceToken={props.sourceToken}
+              wallet={props.wallet}
+              onSelectToken={(key: Token) => {
+                props.setToken(key);
+                setIsDrawerOpen(false);
+              }}
+              isSource={props.isSource}
+            />
+          )}
+        </SwipeableDrawer>
+      ) : (
+        <Popover
+          {...bindPopover(popupState)}
+          transitionDuration={200}
+          anchorOrigin={{
+            vertical: 'top',
+            horizontal: 'center',
+          }}
+          className={classes.popover}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'center',
+          }}
+          marginThreshold={4}
+          slotProps={{
+            paper: {
+              className: classes.popoverSlot,
+              sx: {
+                borderRadius: '8px',
+              },
+            },
+          }}
+        >
+          <ChainList
+            chainList={props.chainList}
+            selectedChainConfig={chainConfig}
+            showSearch={showChainSearch}
+            setShowSearch={setShowChainSearch}
+            wallet={props.wallet}
+            onChainSelect={(key) => {
+              props.setChain(key);
+            }}
+          />
+          {!showChainSearch && chainConfig && (
+            <TokenList
+              tokenList={props.tokenList}
+              isFetching={props.isFetching}
+              selectedChainConfig={chainConfig}
+              selectedToken={props.token}
+              sourceToken={props.sourceToken}
+              wallet={props.wallet}
+              onSelectToken={(key: Token) => {
+                props.setToken(key);
+                popupState.close();
+              }}
+              isSource={props.isSource}
+            />
+          )}
+        </Popover>
+      )}
     </>
   );
 };
