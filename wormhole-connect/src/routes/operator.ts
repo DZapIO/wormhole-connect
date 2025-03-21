@@ -1,5 +1,6 @@
 import config from 'config';
 import { parseTokenKey, Token, tokenKey } from 'config/tokens';
+import { maybeLogSdkError } from 'utils/errors';
 
 import {
   Chain,
@@ -180,7 +181,7 @@ export default class RouteOperator {
           }
         }
       } catch (e) {
-        console.error(e);
+        maybeLogSdkError(e);
       }
     });
 
