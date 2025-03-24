@@ -158,9 +158,16 @@ export const connectLastUsedWallet = async (
     const options = await getWalletOptions(chainConfig);
     const wallet = options.find((w) => w.name === lastUsedWallet);
     if (wallet) {
-      const connected = await connectWallet(type, chain, wallet, dispatch);
-      if (!connected) {
+      try {
+        const connected = await connectWallet(type, chain, wallet, dispatch);
+        if (!connected) {
+          localStorage.removeItem(localStorageKey);
+        }
+      } catch (e: any) {
         localStorage.removeItem(localStorageKey);
+        throw new Error(
+          `Failed to autoconnect to wallet ${lastUsedWallet} for ${chain} (${chainConfig.context}): ${e.message}`,
+        );
       }
     }
   }
