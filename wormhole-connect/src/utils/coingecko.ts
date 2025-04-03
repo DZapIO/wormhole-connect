@@ -43,7 +43,7 @@ export interface CoingeckoParams {
 const coingeckoRequest = async (
   path: string,
   params?: CoingeckoParams,
-): Promise<Response> => {
+): Promise<any> => {
   const headers = new Headers({
     'Content-Type': 'application/json',
     ...(config.coingecko?.apiKey
@@ -60,7 +60,12 @@ const coingeckoRequest = async (
   return fetch(`${hostname}${path}`, {
     signal: params?.abort?.signal,
     headers,
-  }).then((resp) => resp.json());
+  })
+    .then((resp) => resp.json())
+    .catch((err) => {
+      console.error('Error fetching from Coingecko', err);
+      return null;
+    });
 };
 
 export const fetchTokenMetadata = async (
