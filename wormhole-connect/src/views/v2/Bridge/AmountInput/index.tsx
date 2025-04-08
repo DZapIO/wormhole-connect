@@ -99,8 +99,12 @@ const useStyles = makeStyles()((theme: any) => ({
   },
   amountInput: {
     borderRadius: '8px',
-    background: 'transparent',
-    border: `1px solid ${theme.palette.input.border}`,
+    background: theme.palette.input.fillTreatment
+      ? 'transparent'
+      : theme.palette.input.background,
+    border: theme.palette.input.fillTreatment
+      ? `1px solid ${theme.palette.input.border}`
+      : 'none',
   },
   amountInputEmpty: {
     background: theme.palette.input.background,
@@ -223,12 +227,9 @@ const AmountInput = (props: Props) => {
     props.tokenBalance,
   ]);
 
-  const handleChange = useCallback(
-    (newValue: string): void => {
-      setAmountInput(newValue);
-    },
-    [dispatch],
-  );
+  const handleChange = useCallback((newValue: string): void => {
+    setAmountInput(newValue);
+  }, []);
 
   const tokenPriceAdornment = useMemo(() => {
     const price = calculateUSDPrice(

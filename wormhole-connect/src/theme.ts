@@ -9,8 +9,10 @@ export type WormholeConnectTheme = {
   mode: PaletteMode;
   // Background of surrounding application
   background?: PaletteMode;
-  // Color of input fields, like asset picker and dropdowns
+  // Color of input fields, like asset picker and amount input
   input?: string;
+  // Whether input fields will be transparent
+  inputFillTreatment?: boolean;
   // Primary brand color
   primary?: string;
   // Secondary brand color
@@ -71,6 +73,7 @@ export type InternalTheme = {
   input: {
     background: string;
     border: string;
+    fillTreatment: boolean;
   };
   font: string;
   logo: string;
@@ -120,6 +123,7 @@ export const light: InternalTheme = {
   input: {
     background: '#f9f9f9',
     border: '#DEE0E3',
+    fillTreatment: true,
   },
   font: '"Inter", sans-serif',
   logo: '#000000',
@@ -176,6 +180,7 @@ export const dark: InternalTheme = {
   input: {
     background: '#1a1928',
     border: '#1e1f35',
+    fillTreatment: true,
   },
   font: '"Inter", sans-serif',
   logo: '#ffffff',
@@ -188,11 +193,20 @@ export const generateTheme = (customTheme: WormholeConnectTheme): Theme => {
 
   // Override built-in theme with whichever custom values we've been provided
   if (customTheme) {
+    if (customTheme.background) {
+      theme.background = {
+        default: customTheme.background,
+      };
+    }
     if (customTheme.input) {
       theme.input = {
+        ...theme.input,
         background: customTheme.input,
         border: customTheme.secondary || theme.secondary.main,
       };
+    }
+    if (customTheme.inputFillTreatment !== undefined) {
+      theme.input.fillTreatment = customTheme.inputFillTreatment;
     }
     if (customTheme.primary) {
       theme.primary = {

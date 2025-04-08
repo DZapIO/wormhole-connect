@@ -370,6 +370,10 @@ function SampleApp() {
                       <i>string;</i>
                     </li>
                     <li>
+                      <pre>inputFillTreatment</pre>
+                      <i>boolean;</i>
+                    </li>
+                    <li>
                       <pre>primary</pre>
                       <i>string;</i>
                     </li>
