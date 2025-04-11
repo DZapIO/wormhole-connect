@@ -1,9 +1,5 @@
 import { Context, ChainConfig } from 'sdklegacy';
-import {
-  NotSupported,
-  Wallet,
-  WalletState,
-} from '@xlabs-libs/wallet-aggregator-core';
+import { Wallet, WalletState } from '@xlabs-libs/wallet-aggregator-core';
 import {
   connectWallet as connectSourceWallet,
   clearWallet,
@@ -11,7 +7,6 @@ import {
 } from 'store/wallet';
 
 import config from 'config';
-import { getChainByChainId } from 'utils';
 
 import { RootState } from 'store';
 import { Dispatch } from 'redux';
@@ -34,7 +29,6 @@ import {
 } from '@wormhole-foundation/sdk-aptos';
 import { SolanaUnsignedTransaction } from '@wormhole-foundation/sdk-solana';
 import { ReadOnlyWallet } from './ReadOnlyWallet';
-import { evmSignerCache } from 'utils/wallet/evm';
 
 export enum TransferWallet {
   SENDING = 'sending',
@@ -216,39 +210,6 @@ export const swapWalletConnections = () => {
   walletConnection.receiving = temp;
 };
 
-export const registerWalletSigner = async (
-  chain: Chain,
-  type: TransferWallet,
-) => {
-  const w = walletConnection[type]! as any;
-  if (!w) throw new Error('must connect wallet');
-  const signer = await w.getSigner();
-  evmSignerCache.registerSigner(chain, signer);
-};
-
-export const switchChain = async (
-  chainId: number | string,
-  type: TransferWallet,
-): Promise<string | undefined> => {
-  const w: Wallet = walletConnection[type]! as any;
-  if (!w) throw new Error('must connect wallet');
-
-  const config = getChainByChainId(chainId)!;
-  const currentChain = w.getNetworkInfo().chainId;
-  if (currentChain === chainId) return;
-  if (config.context === Context.ETH) {
-    try {
-      // some wallets may not support chain switching
-      const evm = await import('utils/wallet/evm');
-      await evm.switchChain(w, chainId as number);
-    } catch (e) {
-      if (e instanceof NotSupported) return;
-      throw e;
-    }
-  }
-  return w.getAddress();
-};
-
 export const disconnect = async (type: TransferWallet) => {
   const w = walletConnection[type]! as any;
   if (!w) return;
@@ -274,7 +235,6 @@ export const signAndSendTransaction = async (
       request as EvmUnsignedTransaction<Network, EvmChains>,
       wallet,
       chain,
-      options,
     );
     return tx;
   } else if (chainConfig.context === Context.SOLANA) {

@@ -1,4 +1,4 @@
-import { Wallet } from '@xlabs-libs/wallet-aggregator-core';
+import { Wallet, NotSupported } from '@xlabs-libs/wallet-aggregator-core';
 import {
   EVMWallet,
   Eip6963Wallet,
@@ -88,31 +88,31 @@ export interface AssetInfo {
   chainId?: number;
 }
 
-export async function switchChain(w: Wallet, chainId: number | string) {
-  await (w as EVMWallet).switchChain(chainId as number);
-}
-
 export async function signAndSendTransaction(
   request: EvmUnsignedTransaction<Network, EvmChains>,
   w: Wallet,
   chainName: string,
-  options: any, // TODO ?!?!!?!?
 ): Promise<string> {
-  // TODO remove reliance on SDkv1 here (multi-provider)
-  const signer = evmSignerCache.getSigner(chainName);
+  const signer = await (w as any).getSigner();
   if (!signer) throw new Error('No signer found for chain' + chainName);
 
   // Ensure the signer is connected to the correct chain
-  const provider = await signer.provider?.getNetwork();
   const expectedChainId = request.transaction.chainId
     ? ethers.getBigInt(request.transaction.chainId)
     : undefined;
-  const actualChainId = provider?.chainId;
 
-  if (!actualChainId || !expectedChainId || actualChainId !== expectedChainId) {
-    throw new Error(
-      `Signer is not connected to the right chain. Expected ${expectedChainId}, got ${actualChainId}`,
-    );
+  if (expectedChainId) {
+    try {
+      await (w as EVMWallet).switchChain(Number(expectedChainId));
+    } catch (e) {
+      if (e instanceof NotSupported) {
+        console.warn(`Selected EVM wallet cannot switch chains`);
+      } else {
+        throw new Error(`Error switching to chain ${expectedChainId}: ${e}`);
+      }
+    }
+  } else {
+    console.warn(`EVM transaction has no chainId`, request.transaction);
   }
 
   const tx = await signer.sendTransaction(request.transaction);
@@ -122,66 +122,3 @@ export async function signAndSendTransaction(
   /* @ts-ignore */
   return result.hash;
 }
-
-export class EvmSignerCache {
-  protected signers: Map<string, ethers.Signer>;
-
-  constructor() {
-    this.signers = new Map();
-  }
-
-  registerSigner(name: string, signer: ethers.Signer): void {
-    if (!signer.provider) {
-      throw new Error('Signer does not permit reconnect and has no provider');
-    }
-    this.signers.set(name, signer);
-  }
-
-  unregisterSigner(name: string): void {
-    if (!this.signers.has(name)) {
-      return;
-    }
-    this.signers.delete(name);
-  }
-
-  clearSigners(): void {
-    this.signers.clear();
-  }
-
-  registerWalletSigner(name: string, privkey: string): void {
-    const wallet = new ethers.Wallet(privkey);
-    this.registerSigner(name, wallet);
-  }
-
-  getSigner(name: string): ethers.Signer | undefined {
-    return this.signers.get(name);
-  }
-
-  mustGetSigner(name: string): ethers.Signer {
-    const signer = this.getSigner(name);
-    if (!signer) {
-      throw new Error(`No signer registered for chain: ${name}`);
-    }
-    return signer;
-  }
-
-  getConnection(name: string): ethers.Signer | undefined {
-    return this.getSigner(name);
-  }
-
-  mustGetConnection(name: string): ethers.Signer {
-    const connection = this.getConnection(name);
-    if (!connection) {
-      throw new Error(`No signer registered for chain: ${name}`);
-    }
-    return connection;
-  }
-
-  async getAddress(name: string): Promise<string | undefined> {
-    const signer = this.getSigner(name);
-    return await signer?.getAddress();
-  }
-}
-
-// Singleton
-export const evmSignerCache = new EvmSignerCache();

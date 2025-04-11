@@ -48,11 +48,7 @@ import {
   millisToMinutesAndSeconds,
   minutesAndSecondsWithPadding,
 } from 'utils/transferValidation';
-import {
-  TransferWallet,
-  registerWalletSigner,
-  switchChain,
-} from 'utils/wallet';
+import { TransferWallet } from 'utils/wallet';
 import TransactionDetails from 'views/v2/Redeem/TransactionDetails';
 import WalletSidebar from 'views/v2/Bridge/WalletConnector/Sidebar';
 import { useConnectToLastUsedWallet } from 'utils/wallet';
@@ -722,14 +718,6 @@ const Redeem = () => {
     const route = routeContext.route!;
 
     try {
-      if (
-        chainConfig!.context === Context.ETH &&
-        typeof chainConfig.chainId === 'number'
-      ) {
-        await switchChain(chainConfig.chainId, TransferWallet.RECEIVING);
-        await registerWalletSigner(toChain, TransferWallet.RECEIVING);
-      }
-
       if (!routes.isManual(route) && !routes.isFinalizable(route)) {
         throw new Error('Route is not manual or finalizable');
       }
