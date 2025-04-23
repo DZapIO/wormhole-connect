@@ -1,11 +1,10 @@
 import { useMemo } from 'react';
-import { useSelector } from 'react-redux';
-import type { RootState } from 'store';
-import { routes } from '@wormhole-foundation/sdk';
-import useRoutesQuotesBulk from 'hooks/useRoutesQuotesBulk';
+import { amount, Chain, routes } from '@wormhole-foundation/sdk';
+import useFetchQuotes from 'hooks/useFetchQuotes';
 import config from 'config';
 import useFetchSupportedRoutes from './useFetchSupportedRoutes';
-import { useGetTokens } from './useGetTokens';
+import { Token } from 'config/tokens';
+import { WalletData } from 'store/wallet';
 
 type Quote = routes.Quote<
   routes.Options,
@@ -21,23 +20,42 @@ type HookReturn = {
   allSupportedRoutes: string[];
   sortedRoutes: string[];
   sortedRoutesWithQuotes: RouteWithQuote[];
-  quotesMap: ReturnType<typeof useRoutesQuotesBulk>['quotesMap'];
+  quotesMap: ReturnType<typeof useFetchQuotes>['quotesMap'];
   isFetching: boolean;
 };
 
-export const useSortedRoutesWithQuotes = (): HookReturn => {
-  const { amount, fromChain, toChain, preferredRouteName } = useSelector(
-    (state: RootState) => state.transferInput,
-  );
+interface UseSortedRoutesWithQuotesArgs {
+  amount?: amount.Amount;
+  fromChain?: Chain;
+  toChain?: Chain;
+  preferredRouteName?: string;
+  toNativeToken: number;
+  sourceToken?: Token;
+  destToken?: Token;
+  receivingWallet: WalletData;
+}
 
-  const { toNativeToken } = useSelector((state: RootState) => state.relay);
-
-  const { sourceToken, destToken } = useGetTokens();
-
+export const useSortedRoutesWithQuotes = ({
+  amount,
+  fromChain,
+  toChain,
+  preferredRouteName,
+  toNativeToken,
+  sourceToken,
+  destToken,
+  receivingWallet,
+}: UseSortedRoutesWithQuotesArgs): HookReturn => {
   const { supportedRoutes, isFetching: isFetchingSupportedRoutes } =
-    useFetchSupportedRoutes();
+    useFetchSupportedRoutes({
+      fromChain,
+      toChain,
+      sourceToken,
+      destToken,
+      toNativeToken,
+      receivingWallet,
+    });
 
-  const useQuotesBulkParams = useMemo(
+  const quoteParams = useMemo(
     () => ({
       amount,
       sourceChain: fromChain,
@@ -45,14 +63,21 @@ export const useSortedRoutesWithQuotes = (): HookReturn => {
       destChain: toChain,
       destToken,
       nativeGas: toNativeToken,
+      recipient: receivingWallet?.address,
     }),
-    [amount, fromChain, sourceToken, destToken, toChain, toNativeToken],
+    [
+      amount,
+      fromChain,
+      sourceToken,
+      destToken,
+      toChain,
+      toNativeToken,
+      receivingWallet?.address,
+    ],
   );
 
-  const { quotesMap, isFetching: isFetchingQuotes } = useRoutesQuotesBulk(
-    supportedRoutes,
-    useQuotesBulkParams,
-  );
+  const { quotesMap, isFetchingInitialQuotes: isFetchingQuotes } =
+    useFetchQuotes(supportedRoutes, quoteParams);
 
   const routesWithQuotes = useMemo(() => {
     return supportedRoutes

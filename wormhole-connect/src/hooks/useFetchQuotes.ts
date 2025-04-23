@@ -1,5 +1,5 @@
 import { isSameToken, amount as sdkAmount } from '@wormhole-foundation/sdk';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from 'store';
 import {
@@ -24,27 +24,37 @@ type Params = {
   destToken: Token | undefined;
   amount?: sdkAmount.Amount;
   nativeGas: number;
+  recipient?: string;
 };
 
 type HookReturn = {
   quotesMap: Record<string, QuoteResult | undefined>;
-  isFetching: boolean;
+  isFetchingInitialQuotes: boolean;
 };
 
-const QUOTE_REFRESH_INTERVAL = 20_000;
 const MAYAN_BETA_PROTOCOL_LIMITS = {
-  MCTP: 10_000,
-  SHUTTLE: 5000,
+  SHUTTLE: 10_000,
 };
 
-const useRoutesQuotesBulk = (routes: string[], params: Params): HookReturn => {
+export default (routes: string[], params: Params): HookReturn => {
   const [nonce, setNonce] = useState(new Date().valueOf());
-  const [refreshTimeout, setRefreshTimeout] = useState<null | ReturnType<
-    typeof setTimeout
-  >>(null);
-
-  const [isFetching, setIsFetching] = useState(false);
+  const refreshTimeout = useRef<undefined | ReturnType<typeof setTimeout>>(
+    undefined,
+  );
+  const [isFetchingInitialQuotes, setIsFetchingInitialQuotes] = useState(false);
   const [quotes, setQuotes] = useState<QuoteResult[]>([]);
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    const visibilityHandler = () => {
+      setIsVisible(!document.hidden);
+    };
+    document.addEventListener('visibilitychange', visibilityHandler);
+
+    return () => {
+      document.removeEventListener('visibilitychange', visibilityHandler);
+    };
+  }, []);
 
   // TODO temporary
   // Calculate USD amount for temporary $10,000 Mayan limit
@@ -59,77 +69,141 @@ const useRoutesQuotesBulk = (routes: string[], params: Params): HookReturn => {
   );
 
   useEffect(() => {
+    if (routes.length === 0) return;
+
+    // Determine when the next quote expires, and set a timer
+    // to refetch quotes at that point.
+    let timeTilNextFetch = 0;
+
+    if (quotes.length > 0) {
+      const rParams = params as Required<QuoteParams>;
+      const nextExpiry = config.routes.quoteCache.nextExpiry(routes, rParams);
+
+      if (!nextExpiry) {
+        return;
+      }
+      // Fetch again 5 seconds before the next expiry
+      timeTilNextFetch = nextExpiry.valueOf() - Date.now() - 5_000;
+    }
+
+    if (!timeTilNextFetch) {
+      return;
+    }
+
+    if (refreshTimeout) {
+      clearTimeout(refreshTimeout.current);
+    }
+
+    console.debug(
+      `Waiting ${timeTilNextFetch / 1000}s until next quote fetch`,
+      routes,
+      params,
+    );
+
+    refreshTimeout.current = setTimeout(
+      () => setNonce(Date.now()),
+      timeTilNextFetch,
+    );
+
+    return () => {
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout.current);
+      }
+    };
+  }, [quotes, routes, params]);
+
+  // IMPORTANT
+  //
+  // This is the hook where the quotes are actually fetched. This should only be invoked by
+  // very specific events:
+  //
+  // 1. supported routes being recomputed (this is the "routes" dep)
+  // 2. the expiry watching hook above has fired because one of our quotes expired (this is the "nonce" dep)
+  // 3. the user changed the amount input (this is the "params.amount" dep)
+  // 3. the user changed the gas dropoff input (this is the "params.nativeGas" dep)
+  // 4. the tab became visible again after being not visible (this is the "isVisible" dep)
+  //
+  // Notably we are NOT putting all of "params" into the deps, or any of its other properties, which
+  // are the tokens or chains. We do not want to immediately fetch quotes when the user changes the
+  // chain or token because we don't have a new list of supported routes for those inputs yet.
+  // This is why "routes" is a dependency here. This input is recomputed by useFetchSupportedRoutes inside of
+  // useSortedRoutesWithQuotes, which is also the parent hook which invokes this fetchQuotes hook.
+  //
+  // In other words it is a pipeline; we need to first figure out which routes are supported before
+  // we fetch quotes.
+  //
+  // So please don't add deps to this hook just because the linter told you to, or if you don't understand
+  // how all of this is supposed to flow. React hooks are an inelegant tool for building pipelines and lead
+  // you to writing confusing spaghetti, but this is what we have to work with.
+  useEffect(() => {
     let unmounted = false;
+    const cleanup = () => {
+      unmounted = true;
+    };
+
     if (
+      routes.length === 0 ||
       !params.sourceChain ||
       !params.sourceToken ||
       !params.destChain ||
       !params.destToken ||
-      !params.amount ||
-      routes.length === 0
+      !params.amount
     ) {
-      return;
+      // Clear quotes if we are missing any inputs or if the inputs support 0 routes
+      setQuotes([]);
+      setIsFetchingInitialQuotes(false);
+      return cleanup;
+    }
+
+    if (isTransactionInProgress || !isVisible) {
+      // Leave quotes alone if the user initiated a transfer,
+      // or if the tab is not visible.
+      return cleanup;
     }
 
     // Forcing TS to infer that fields are non-optional
     const rParams = params as Required<QuoteParams>;
 
-    const onComplete = () => {
-      // Refresh quotes in 20 seconds
-      const refreshTimeout = setTimeout(
-        () => setNonce(new Date().valueOf()),
-        QUOTE_REFRESH_INTERVAL,
-      );
-      setRefreshTimeout(refreshTimeout);
-    };
-
-    if (isTransactionInProgress) {
-      // Don't fetch new quotes if the user has committed to one and has initiated a transaction
-      onComplete();
-    } else {
-      setIsFetching(true);
-
-      const quotesValues = quotes.filter((q) => q.success);
-      // Immediately invalidate quotes if token inputs changed
-      if (quotesValues.length > 0) {
-        const { sourceToken, destinationToken } = quotesValues[0];
-        if (
-          !isSameToken(sourceToken.token, rParams.sourceToken) ||
-          !isSameToken(destinationToken.token, rParams.destToken)
-        ) {
-          setQuotes([]);
-        }
+    const quotesValues = quotes.filter((q) => q.success);
+    // Immediately invalidate quotes if token inputs changed
+    if (quotesValues.length > 0) {
+      const { sourceToken, destinationToken } = quotesValues[0];
+      if (
+        !isSameToken(sourceToken.token, rParams.sourceToken) ||
+        !isSameToken(destinationToken.token, rParams.destToken)
+      ) {
+        setQuotes([]);
       }
-
-      config.routes.getQuotes(routes, rParams).then((quoteResults) => {
-        if (!unmounted) {
-          setQuotes(quoteResults);
-          setIsFetching(false);
-          onComplete();
-        }
-      });
     }
 
-    return () => {
-      unmounted = true;
-      if (refreshTimeout) {
-        clearTimeout(refreshTimeout);
+    // Let the hook caller know when we are fetching for the first time
+    // so it can show an in-progress state.
+    //
+    // However, when fetching updates afterwards, we do not need to show
+    // this in-progress state because there are already existing quotes
+    // to show - this is less jarring.
+    if (quotes.length === 0 && routes.length !== 0) {
+      setIsFetchingInitialQuotes(true);
+    }
+
+    config.routes.getQuotes(routes, rParams).then((quoteResults) => {
+      if (!unmounted) {
+        setQuotes(quoteResults);
+        setIsFetchingInitialQuotes(false);
       }
-    };
-    // Important: We should not include routes property in deps. See routes.join() below.
+    });
+
+    return cleanup;
+    // Important: Do not the token or chain params to the dependency array. This causes the hook
+    // to fire prematurely; we need to figure out supported routes before fetching quotes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    routes.join(), // .join() is necessary to prevent unnecessary updates when routes array's ref changed but its content did not
-    params.sourceChain,
-    params.sourceToken,
-    params.destChain,
-    params.destToken,
+    routes,
+    nonce,
     params.amount,
     params.nativeGas,
-    nonce,
-    isTransactionInProgress,
-    params,
+    params.recipient,
+    isVisible,
   ]);
 
   const quotesMap = useMemo(
@@ -235,8 +309,6 @@ const useRoutesQuotesBulk = (routes: string[], params: Params): HookReturn => {
 
   return {
     quotesMap,
-    isFetching,
+    isFetchingInitialQuotes,
   };
 };
-
-export default useRoutesQuotesBulk;
