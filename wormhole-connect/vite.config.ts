@@ -1,6 +1,7 @@
 import path from 'path';
 import { execSync } from 'child_process';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, ConfigEnv, LibraryFormats } from 'vite';
+import type { PreRenderedAsset } from 'rollup';
 import react from '@vitejs/plugin-react-swc';
 import checker from '@artursapek/vite-plugin-checker';
 // Until this is merged or that issue is fixed some other way, we have to use
@@ -8,6 +9,7 @@ import checker from '@artursapek/vite-plugin-checker';
 // https://github.com/davidmyersdev/vite-plugin-node-polyfills/pull/89
 import { nodePolyfills } from '@kev1n-peters/vite-plugin-node-polyfills';
 import dts from 'vite-plugin-dts';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 const packagePath = __dirname.endsWith('wormhole-connect')
   ? './package.json'
@@ -86,7 +88,13 @@ const plugins = [
       Buffer: true,
     },
   }),
-];
+  process.env.ANALYZE === 'true' && visualizer({
+    open: true,
+    gzipSize: true,
+    brotliSize: true,
+    template: 'treemap' // or 'sunburst'
+  })
+].filter(Boolean);
 
 const optimizeDeps = {
   include: [
@@ -100,16 +108,19 @@ interface AssetInfo {
   name: string;
 }
 
-let output = {
-  assetFileNames: (assetInfo: AssetInfo) => {
+let output: {
+  assetFileNames: (assetInfo: PreRenderedAsset) => string;
+  inlineDynamicImports: boolean;
+  exports: 'named' | 'default' | 'none' | 'auto';
+} = {
+  assetFileNames: (assetInfo: PreRenderedAsset) => {
     if (assetInfo.name === 'main.css') {
       return '[name][extname]';
     }
-
     return '[name]-[hash][extname]';
   },
   inlineDynamicImports: false,
-  exports: 'named',
+  exports: 'named' as const,
 };
 
 let external = [
@@ -118,10 +129,11 @@ let external = [
   '@particle-network/auth',
 ];
 
-export default defineConfig(({ command, mode }) => {
+export default defineConfig(({ command, mode }: ConfigEnv) => {
   const env = loadEnv(mode, process.cwd(), '');
   const isHosted = !!env.VITE_BUILD_HOSTED;
   const isNetlify = !!env.VITE_BUILD_NETLIFY;
+  const isAnalyze = process.env.ANALYZE === 'true';
 
   if (command === 'serve' || (command === 'build' && isNetlify)) {
     // Local development
@@ -135,7 +147,7 @@ export default defineConfig(({ command, mode }) => {
           input: {
             main: 'src/SampleApp.tsx',
             index: 'index.html',
-          },
+          } as Record<string, string>,
           output,
           external,
         },
@@ -155,7 +167,7 @@ export default defineConfig(({ command, mode }) => {
     //   bundled with a copy of React. This is "legacy mode" and useful only on web apps that don't
     //   use React.
     //
-
+    
     if (isHosted) {
       return {
         define,
@@ -166,7 +178,7 @@ export default defineConfig(({ command, mode }) => {
           rollupOptions: {
             input: {
               main: 'src/main.tsx',
-            },
+            } as Record<string, string>,
             output: {
               entryFileNames: '[name].js',
               ...output,
@@ -186,13 +198,13 @@ export default defineConfig(({ command, mode }) => {
           outDir: './lib',
           lib: {
             entry: path.resolve(__dirname, 'src/index.tsx'),
-            formats: ['es', 'cjs'],
+            formats: (isAnalyze ? ['es'] : ['es', 'cjs']) as LibraryFormats[],
             fileName: 'index',
           },
           rollupOptions: {
             input: {
               index: 'src/index.ts',
-            },
+            } as Record<string, string>,
             output,
             external: [
               'react',
@@ -208,4 +220,13 @@ export default defineConfig(({ command, mode }) => {
       };
     }
   }
+
+  // Default configuration if no conditions are met
+  return {
+    define,
+    envPrefix,
+    resolve,
+    plugins,
+    optimizeDeps,
+  };
 });

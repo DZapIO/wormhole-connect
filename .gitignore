@@ -5,3 +5,7 @@
 .ignore
 .yalc
 yalc.lock
+
+# rollup plugin analyzer output
+stats.json
+stats.html
