@@ -1,43 +1,45 @@
 import { Chain } from '@wormhole-foundation/sdk';
 import config from 'config';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from 'store';
+import { clearSearch, setSearch } from 'store/search';
 
 type ExternalSearch = {
-  hasExternalSearch: boolean;
+  hasExternalSearch?: boolean;
   txHash?: string;
-  chainName?: Chain;
+  chain?: Chain;
   clear: () => void;
 };
 
 export function useExternalSearch(): ExternalSearch {
-  const [hasExternalSearch, setHasExternalSearchtate] =
-    useState<boolean>(false);
-  const [txHash, setTxHash] = useState<string>();
-  const [chainName, setChainName] = useState<Chain>();
+  const dispatch = useDispatch();
+  const { txHash, chain } = useSelector((state: RootState) => state.search);
+
   useEffect(() => {
     if (config.ui.searchTx?.chainName && config.ui.searchTx?.txHash) {
-      const chainName = config.ui.searchTx.chainName.toLowerCase() as Chain;
+      const chainName = config.ui.searchTx.chainName.toLowerCase();
+      const cfg = config.chainsArr.find(
+        (cfg) => cfg.sdkName.toLowerCase() === chainName,
+      );
 
-      const validChains = config.chainsArr
-        .filter((chain) => chain.key !== 'Wormchain')
-        .map((chain) => chain.key);
-
-      if (validChains.includes(chainName)) {
-        setHasExternalSearchtate(true);
-        setTxHash(config.ui.searchTx.txHash);
-        setChainName(chainName);
+      if (cfg) {
+        dispatch(
+          setSearch({
+            txHash: config.ui.searchTx.txHash,
+            chain: cfg.sdkName,
+          }),
+        );
       }
     }
-  }, []);
+  }, [dispatch]);
 
   return {
-    hasExternalSearch,
+    hasExternalSearch: !!(txHash && chain),
     txHash,
-    chainName,
+    chain,
     clear: () => {
-      setHasExternalSearchtate(false);
-      setTxHash(undefined);
-      setChainName(undefined);
+      dispatch(clearSearch());
       if (config.ui.searchTx) {
         config.ui.searchTx.chainName = undefined;
         config.ui.searchTx.txHash = undefined;
