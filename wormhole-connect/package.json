@@ -10,6 +10,21 @@
       "require": "./lib/index.js",
       "import": "./lib/index.mjs",
       "types": "./lib/index.d.ts"
+    },
+    "./mayan": {
+      "require": "./lib/mayan.js",
+      "import": "./lib/mayan.mjs",
+      "types": "./lib/mayan.d.ts"
+    },
+    "./ntt": {
+      "require": "./lib/ntt.js",
+      "import": "./lib/ntt.mjs",
+      "types": "./lib/ntt.d.ts"
+    },
+    "./hosted": {
+      "require": "./lib/hosted.js",
+      "import": "./lib/hosted.mjs",
+      "types": "./lib/hosted.d.ts"
     }
   },
   "files": [

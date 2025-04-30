@@ -59,6 +59,7 @@ const resolve = {
     sdklegacy: path.resolve(__dirname, './src/sdklegacy'),
     public: path.resolve(__dirname, './public'),
     views: path.resolve(__dirname, './src/views'),
+    exports: path.resolve(__dirname, './src/exports'),
     'process/': 'process',
     'buffer/': 'buffer',
   },
@@ -197,14 +198,25 @@ export default defineConfig(({ command, mode }: ConfigEnv) => {
         build: {
           outDir: './lib',
           lib: {
-            entry: path.resolve(__dirname, 'src/index.tsx'),
+            entry: [
+              path.resolve(__dirname, 'src/exports/index.ts'),
+              path.resolve(__dirname, 'src/exports/mayan.ts'),
+              path.resolve(__dirname, 'src/exports/ntt.ts'),
+              path.resolve(__dirname, 'src/exports/hosted.ts'),
+            ],
             formats: (isAnalyze ? ['es'] : ['es', 'cjs']) as LibraryFormats[],
-            fileName: 'index',
+            fileName: (format, entryname) => {
+              const n = entryname.split('/').pop()!;
+              return `${n.split('.')[0]}.${format === 'es' ? 'mjs' : 'js'}`;
+            },
           },
           rollupOptions: {
             input: {
-              index: 'src/index.ts',
-            } as Record<string, string>,
+              index: 'src/exports/index.ts',
+              mayan: 'src/exports/mayan.ts',
+              ntt: 'src/exports/ntt.ts',
+              hosted: 'src/exports/hosted.ts',
+            },
             output,
             external: [
               'react',
