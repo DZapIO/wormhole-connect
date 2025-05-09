@@ -397,9 +397,18 @@ const Bridge = () => {
         >
           <span>
             <IconButton
+              data-testid="history-button"
               sx={{ padding: 0 }}
               disabled={isTxHistoryDisabled}
-              onClick={() => dispatch(setAppRoute('history'))}
+              onClick={() => {
+                dispatch(setAppRoute('history'));
+                config.triggerEvent({
+                  type: 'history.load',
+                  details: {
+                    wallet: sendingWallet?.address,
+                  },
+                });
+              }}
             >
               <HistoryIcon />
             </IconButton>

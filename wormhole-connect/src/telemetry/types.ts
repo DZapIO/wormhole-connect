@@ -96,12 +96,20 @@ export interface ConnectWalletEvent {
   };
 }
 
+export interface HistoryLoadEvent {
+  type: 'history.load';
+  details: {
+    wallet: string;
+  };
+}
+
 export type WormholeConnectEventCore =
   | LoadEvent
   | UpdateConfigEvent
   | TransferEvent
   | TransferErrorEvent
-  | ConnectWalletEvent;
+  | ConnectWalletEvent
+  | HistoryLoadEvent;
 
 export interface WormholeConnectEventMeta {
   meta: {
