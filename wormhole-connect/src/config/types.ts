@@ -126,6 +126,9 @@ export interface WormholeConnectConfig {
   // isTokenSupportedHandler can be used to disable certain tokens from being selected
   isTokenSupportedHandler?: IsTokenSupportedHandler;
 
+  // filterRoutes can be used to filter the routes that are shown to the user
+  filterRoutes?: (routes: string[]) => string[];
+
   // UI details
   ui?: UiConfig;
 
@@ -166,6 +169,7 @@ export interface InternalConfig<N extends Network> {
   validateTransfer?: ValidateTransferHandler;
   isRouteSupportedHandler?: IsRouteSupportedHandler;
   isTokenSupportedHandler?: IsTokenSupportedHandler;
+  filterRoutes?: (routes: string[]) => string[];
 
   // UI configuration
   ui: UiConfig;
