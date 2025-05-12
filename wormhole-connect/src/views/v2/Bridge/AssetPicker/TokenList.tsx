@@ -133,13 +133,13 @@ const TokenList = (props: Props) => {
     return 0;
   };
 
+  // TODO this entire thing should be moved outside of this TokenList component. The component is doing way too much.
   const sortedTokens = useMemo(() => {
     if (!props.tokenList) return [];
 
+    let unsortedTokens = props.tokenList;
+
     // Apply search input - find tokens with exact match of address, or partial match of symbol
-    const tokenListWithSearchResult = props.tokenList.filter(
-      (t) => !isFrankensteinToken(t, props.selectedChainConfig.sdkName),
-    );
     if (searchQuery) {
       let searchResults: Token[] = [];
       const byAddress = config.tokens.get(
@@ -165,7 +165,7 @@ const TokenList = (props: Props) => {
         if (
           !props.tokenList.find((existing) => isSameToken(result, existing))
         ) {
-          tokenListWithSearchResult.push(result);
+          unsortedTokens.push(result);
         }
       }
     }
@@ -178,7 +178,7 @@ const TokenList = (props: Props) => {
       return calculateUSDPriceRaw(getTokenPrice, balance.balance, token) ?? 0;
     };
 
-    let sorted = tokenListWithSearchResult.sort((a, b) => {
+    let sorted = unsortedTokens.sort((a, b) => {
       const scoreA = tokenPreferenceScore(a);
       const scoreB = tokenPreferenceScore(b);
       if (scoreA > scoreB) return -1;
@@ -261,6 +261,13 @@ const TokenList = (props: Props) => {
       sorted = sorted.filter(config.isTokenSupportedHandler);
     }
 
+    if (props.isSource && props.wallet.address) {
+      sorted = sorted.filter((t) => {
+        const bal = balances[tokenKey(t)]?.balance;
+        return bal && sdkAmount.units(bal) > 0;
+      });
+    }
+
     return sorted;
   }, [
     props.selectedChainConfig.sdkName,
@@ -321,11 +328,11 @@ const TokenList = (props: Props) => {
         const queryLC = query.toLowerCase();
 
         const symbolMatch = [token.symbol, token.name].some((criteria) =>
-          criteria?.toLowerCase()?.includes?.(queryLC),
+          criteria?.toLowerCase()?.startsWith?.(queryLC),
         );
         if (symbolMatch) return true;
 
-        if (token.address.toString().toLowerCase().includes(queryLC)) {
+        if (token.address.toString().toLowerCase() === queryLC) {
           return true;
         }
 
