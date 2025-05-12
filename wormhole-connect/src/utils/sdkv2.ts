@@ -24,6 +24,7 @@ import { PublicKey } from '@solana/web3.js';
 import * as splToken from '@solana/spl-token';
 import { WORMSCAN } from 'config/constants';
 import { TokenTuple } from 'config/tokens';
+import { isExecutorRoute } from 'utils';
 
 // Used to represent an initiated transfer. Primarily for the Redeem view.
 export interface TransferInfo {
@@ -59,7 +60,6 @@ export interface TransferInfo {
 export type ExplorerInfo = {
   url: string;
   name: string;
-  apiUrl: string;
 };
 
 // TODO SDKV2 add a way for the Route interface to offer this
@@ -76,7 +76,15 @@ export function getExplorerInfo(
     return {
       url: `https://explorer.mayan.finance/swap/${txHash}`,
       name: 'Mayan Explorer',
-      apiUrl: `${config.mayanApi}/v3/swap/trx/${txHash}`,
+    };
+  } else if (isExecutorRoute(routeName)) {
+    // TODO Remove once Wormholescan explorer supports Executor routes
+    // USDC.range supports Mainnet only
+    return {
+      url: config.isMainnet
+        ? `https://usdc.range.org/usdc/status/${txHash}`
+        : '',
+      name: 'USDC.range Explorer',
     };
   } else {
     return {
@@ -84,7 +92,6 @@ export function getExplorerInfo(
         config.isMainnet ? '' : '?network=TESTNET'
       }`,
       name: 'Wormholescan',
-      apiUrl: `${config.wormholeApi}api/v1/operations?txHash=${txHash}`,
     };
   }
 }
