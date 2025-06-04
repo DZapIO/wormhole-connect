@@ -51,8 +51,15 @@ export function buildConfig(
     customConfig.wrappedTokens,
   );
 
+  const cacheKey = (name: string) => {
+    if (customConfig.cacheNamespace) {
+      return `wormhole-connect:${customConfig.cacheNamespace}:${name}`;
+    } else {
+      return `wormhole-connect:${name}`;
+    }
+  };
+
   const tokens = buildTokenCache(
-    network,
     [
       ...networkData.tokens,
       ...(customConfig.tokensConfig
@@ -60,6 +67,7 @@ export function buildConfig(
         : []),
     ],
     wrappedTokens,
+    cacheKey(`token-cache:${network}`),
   );
 
   const sdkConfig = LEGACY_CONFIG[network.toUpperCase()];
@@ -146,6 +154,9 @@ export function buildConfig(
 
     // UI details
     ui: createUiConfig({ ...customConfig.ui }),
+
+    // Used to namespace localStorage caches
+    cacheKey,
 
     // Guardian Set
     guardianSet: networkData.guardianSet,

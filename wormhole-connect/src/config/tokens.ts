@@ -7,7 +7,6 @@ import {
   TokenAddress,
   toNative,
   isNative,
-  Network,
   chainToPlatform,
   UniversalAddress,
 } from '@wormhole-foundation/sdk';
@@ -507,12 +506,12 @@ export class TokenCache extends TokenMapping<Token> {
 
 // Seed a new TokenCache using hard-coded tokens
 export function buildTokenCache(
-  network: Network,
   tokens: TokenConfig[],
   wrappedTokens: WrappedTokenAddresses,
+  cacheKey: string,
   tokenFilter?: string[],
 ): TokenCache {
-  const cache = TokenCache.load(`wormhole-connect:token-cache:${network}`);
+  const cache = TokenCache.load(cacheKey);
 
   for (const { tokenId, symbol, name, icon, decimals } of tokens) {
     const token = new Token(
