@@ -1,5 +1,5 @@
-import React from 'react';
-import { makeStyles } from 'tss-react/mui';
+import React, { useMemo } from 'react';
+import { Box, useTheme } from '@mui/material';
 
 import type { Chain } from '@wormhole-foundation/sdk';
 
@@ -30,28 +30,6 @@ import MEZO from './Chains/MEZO';
 import LINEA from './Chains/LINEA';
 import SONIC from './Chains/SONIC';
 
-const useStyles = makeStyles<{ size: number }>()((theme: any, { size }) => ({
-  container: {
-    height: size,
-    width: size,
-    ...CENTER,
-  },
-  iconImage: {
-    width: size,
-    height: size,
-  },
-  icon: {
-    maxHeight: '100%',
-    maxWidth: '100%',
-  },
-  emptyIcon: {
-    width: size,
-    height: size,
-    background: `color-mix(in hsl, ${theme.palette.text.secondary}, ${theme.palette.input.background} 80%)`,
-    borderRadius: '3px',
-  },
-}));
-
 const iconMap: { [key in Chain]?: React.JSX.Element } = {
   Moonbeam: GLMR(),
   Avalanche: AVAX(),
@@ -78,6 +56,7 @@ const iconMap: { [key in Chain]?: React.JSX.Element } = {
   Mezo: MEZO(),
   Linea: LINEA(),
   Sonic: SONIC(),
+
 };
 
 function isBuiltinChainIcon(icon?: Chain | string): icon is Chain {
@@ -90,24 +69,63 @@ type Props = {
 };
 
 function EmptyIcon(props: { size: number }) {
-  const { classes } = useStyles(props);
-  return <div className={classes.emptyIcon} />;
+  const theme = useTheme();
+  const { size } = props;
+
+  const styles = useMemo(() => {
+    const baseStyle = {
+      width: size,
+      height: size,
+      borderRadius: '3px',
+    };
+    if (theme.palette.text && theme.palette.input) {
+      return {
+        emptyIcon: {
+          ...baseStyle,
+          background: `color-mix(in hsl, ${theme.palette.text.secondary}, ${theme.palette.input.background} 80%)`,
+        },
+      };
+    }
+    return {
+      emptyIcon: baseStyle,
+    };
+  }, [size, theme]);
+
+  return <Box sx={styles.emptyIcon} />;
 }
 
 function ChainIconComponent(props: Props) {
   const size = props.height || 36;
-  const { classes } = useStyles({ size });
 
-  // Default, if icon is undefined
-  let icon = <EmptyIcon size={size} />;
+  const styles = useMemo(() => ({
+    container: {
+      height: size,
+      width: size,
+      ...CENTER,
+    },
+    iconImage: {
+      width: size,
+      height: size,
+    },
+  }), [size]);
 
   if (isBuiltinChainIcon(props.icon) && iconMap[props.icon]) {
-    icon = iconMap[props.icon]!;
+    // Assuming iconMap stores direct JSX elements based on recent reversions by user
+    return <Box sx={styles.container}>{iconMap[props.icon]!}</Box>;
   } else if (typeof props.icon === 'string') {
-    icon = <img className={classes.iconImage} src={props.icon} />;
+    return (
+      <Box sx={styles.container}>
+        <img style={styles.iconImage} src={props.icon} alt="chain icon" />
+      </Box>
+    );
+  } else {
+    // Default to EmptyIcon if props.icon is undefined or doesn't match other conditions
+    return (
+      <Box sx={styles.container}>
+        <EmptyIcon size={size} />
+      </Box>
+    );
   }
-
-  return <div className={classes.container}>{icon}</div>;
 }
 
 export default ChainIconComponent;

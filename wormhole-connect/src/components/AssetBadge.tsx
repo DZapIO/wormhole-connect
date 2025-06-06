@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import Box from '@mui/material/Box';
 import Badge from '@mui/material/Badge';
-import { makeStyles } from 'tss-react/mui';
+import { useTheme } from '@mui/material/styles';
 
 import ChainIcon from 'icons/ChainIcons';
 import TokenIcon from 'icons/TokenIcons';
@@ -10,26 +10,26 @@ import TokenIcon from 'icons/TokenIcons';
 import type { ChainConfig } from 'config/types';
 import { Token } from 'config/tokens';
 
-const useStyles = makeStyles()((theme: any) => ({
-  badgeContent: {
-    border: `1.5px solid ${theme.palette.input.background}`,
-    borderRadius: '4px',
-  },
-}));
-
 type Props = {
   chainConfig?: ChainConfig;
   token?: Token;
 };
 
 function AssetBadge(props: Props) {
-  const { classes } = useStyles();
+  const theme = useTheme();
   const { chainConfig, token } = props;
+
+  const styles = useMemo(() => ({
+    badgeContent: {
+      border: `1.5px solid ${theme.palette.input.background}`,
+      borderRadius: '4px',
+    },
+  }), [theme]);
 
   return (
     <Badge
       badgeContent={
-        <Box className={classes.badgeContent}>
+        <Box sx={styles.badgeContent}>
           <ChainIcon icon={chainConfig?.icon} height={13} />
         </Box>
       }

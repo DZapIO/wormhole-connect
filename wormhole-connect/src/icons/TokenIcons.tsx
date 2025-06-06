@@ -1,5 +1,5 @@
-import React from 'react';
-import { makeStyles } from 'tss-react/mui';
+import React, { useMemo } from 'react';
+import { Box, useTheme } from '@mui/material';
 
 import { chainToIcon } from '@wormhole-foundation/sdk-icons';
 
@@ -41,29 +41,6 @@ import WORLD from './Tokens/WORLD';
 import BERA from './Tokens/BERA';
 import BTC from './Tokens/BTC';
 import SONIC from './Chains/SONIC'; // TODO: Create a token icon for S
-
-const useStyles = makeStyles<{ size: number }>()((theme: any, { size }) => ({
-  container: {
-    height: size,
-    width: size,
-    ...CENTER,
-  },
-  iconImage: {
-    width: size,
-    height: size,
-    borderRadius: '50px',
-  },
-  icon: {
-    maxHeight: '100%',
-    maxWidth: '100%',
-  },
-  emptyIcon: {
-    width: size,
-    height: size,
-    borderRadius: '50px',
-    background: `color-mix(in hsl, ${theme.palette.text.secondary}, ${theme.palette.input.background} 80%)`,
-  },
-}));
 
 const iconMap: { [key in TokenIcon]: React.JSX.Element } = {
   [TokenIcon.WBTC]: WBTC(),
@@ -126,24 +103,64 @@ type Props = {
 };
 
 function EmptyIcon(props: { size: number }) {
-  const { classes } = useStyles(props);
-  return <div className={classes.emptyIcon} />;
+  const theme = useTheme();
+  const { size } = props;
+
+  const styles = useMemo(() => {
+    const baseStyle = {
+      width: size,
+      height: size,
+      borderRadius: '50px',
+    };
+    if (theme.palette.text && theme.palette.input) {
+      return {
+        emptyIcon: {
+          ...baseStyle,
+          background: `color-mix(in hsl, ${theme.palette.text.secondary}, ${theme.palette.input.background} 80%)`,
+        },
+      };
+    }
+    return {
+      emptyIcon: baseStyle,
+    };
+  }, [size, theme]);
+
+  return <Box sx={styles.emptyIcon} />;
 }
 
 function TokenIconComponent(props: Props) {
   const size = props.height || 36;
-  const { classes } = useStyles({ size });
 
-  // Default, if icon is undefined
-  let icon = <EmptyIcon size={size} />;
+  const styles = useMemo(() => ({
+    container: {
+      height: size,
+      width: size,
+      ...CENTER,
+    },
+    iconImage: {
+      width: size,
+      height: size,
+      borderRadius: '50px',
+    },
+  }), [size]);
 
   if (isBuiltinTokenIcon(props.icon) && iconMap[props.icon]) {
-    icon = iconMap[props.icon];
+    // Assuming iconMap stores direct JSX elements
+    return <Box sx={styles.container}>{iconMap[props.icon]}</Box>;
   } else if (typeof props.icon === 'string') {
-    icon = <img className={classes.iconImage} src={props.icon} />;
+    return (
+      <Box sx={styles.container}>
+        <img style={styles.iconImage} src={props.icon} alt="token icon" />
+      </Box>
+    );
+  } else {
+    // Default to EmptyIcon if props.icon is undefined or doesn't match other conditions
+    return (
+      <Box sx={styles.container}>
+        <EmptyIcon size={size} />
+      </Box>
+    );
   }
-
-  return <div className={classes.container}>{icon}</div>;
 }
 
 export default TokenIconComponent;
