@@ -329,6 +329,15 @@ const mapWallets = (
     }));
 };
 
+// Utility to detect if Nightly is the active injected provider
+function isNightlyInjectedProvider() {
+  return (
+    typeof window !== 'undefined' &&
+    window.ethereum &&
+    window.ethereum.isNightly === true
+  );
+}
+
 export const getWalletOptions = async (
   chain: ChainConfig | undefined,
 ): Promise<WalletData[]> => {
@@ -338,7 +347,12 @@ export const getWalletOptions = async (
   const platform = chainToPlatform(chain.sdkName);
   if (platform === 'Evm') {
     const evm = await import('utils/wallet/evm');
-    return Object.values(mapWallets(evm.getWallets(), platform));
+    let wallets = Object.values(mapWallets(evm.getWallets(), platform));
+    // Filter out 'Injected Wallet' if Nightly is the active injected provider
+    if (isNightlyInjectedProvider()) {
+      wallets = wallets.filter((w) => w.name !== 'Injected Wallet');
+    }
+    return wallets;
   } else if (platform === 'Solana') {
     const solana = await import('utils/wallet/solana');
     const solanaWallets = solana.fetchOptions();
@@ -349,8 +363,15 @@ export const getWalletOptions = async (
     return Object.values(mapWallets(suiOptions, platform));
   } else if (platform === 'Aptos') {
     const aptosWallet = await import('utils/wallet/aptos');
-    const aptosOptions = aptosWallet.fetchOptions();
+    const aptosOptions = await aptosWallet.fetchOptions();
     return Object.values(mapWallets(aptosOptions, platform));
   }
   return [];
 };
+
+// Extend the Window interface to include the 'ethereum' property
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
+}
