@@ -14,7 +14,7 @@ import PlusIcon from 'icons/Plus';
 
 import type { ChainConfig } from 'config/types';
 import type { WalletData } from 'store/wallet';
-import SearchableList from 'views/v2/Bridge/AssetPicker/SearchableList';
+import SearchableList from 'views/v3/Bridge/AssetPicker/SearchableList';
 
 import { Chain } from '@wormhole-foundation/sdk';
 
@@ -29,7 +29,7 @@ type Props = {
 
 const SHORT_LIST_SIZE = 5;
 
-const ChainList = (props: Props) => {
+function ChainList(props: Props) {
   const theme = useTheme();
   const [chainSearchQuery, setChainSearchQuery] = useState('');
 
@@ -56,9 +56,9 @@ const ChainList = (props: Props) => {
         marginBottom: '12px',
       },
       chainSearch: {
-        maxHeight: '400px',
+        maxHeight: '480px',
         [theme.breakpoints.down('sm')]: {
-          maxHeight: '600px',
+          maxHeight: '640px',
         },
       },
       chainButton: {
@@ -90,32 +90,27 @@ const ChainList = (props: Props) => {
     onChainSelect,
   } = props;
 
-  const [topChains, showMoreButton] = useMemo(() => {
+  const topChains = useMemo(() => {
     const allChains = chainList ?? [];
-    const selectedChain = selectedChainConfig;
 
     // Find the selected chain in supported chains
     const selectedChainIndex = allChains.findIndex((chain) => {
-      return chain.sdkName === selectedChain?.sdkName;
+      return chain.sdkName === selectedChainConfig?.sdkName;
     });
     // If the selected chain is outside the top list, we add it to the top;
     // otherwise we do not change its index in the top list
     if (
-      selectedChain &&
+      selectedChainConfig &&
       selectedChainIndex &&
       selectedChainIndex >= SHORT_LIST_SIZE
     ) {
-      return [
-        [selectedChain, ...allChains.slice(0, SHORT_LIST_SIZE - 1)],
-        allChains.length > SHORT_LIST_SIZE,
-      ];
+      return [selectedChainConfig, ...allChains.slice(0, SHORT_LIST_SIZE - 1)];
     }
 
-    return [
-      allChains.slice(0, SHORT_LIST_SIZE),
-      allChains.length > SHORT_LIST_SIZE,
-    ];
+    return allChains.slice(0, SHORT_LIST_SIZE);
   }, [chainList, selectedChainConfig]);
+
+  const showMoreButton = (chainList?.length ?? 0) > SHORT_LIST_SIZE;
 
   const shortList = useMemo(() => {
     return (
@@ -226,6 +221,6 @@ const ChainList = (props: Props) => {
       </CardContent>
     </Card>
   );
-};
+}
 
-export default ChainList;
+export default React.memo(ChainList);

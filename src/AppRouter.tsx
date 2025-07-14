@@ -1,4 +1,10 @@
-import React, { useCallback, useContext, useEffect, useRef } from 'react';
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTheme } from '@mui/material/styles';
 
@@ -7,6 +13,7 @@ import { RootState } from './store';
 import { clearRedeem } from './store/redeem';
 import { clearTransfer } from './store/transferInput';
 import { isEmptyObject, usePrevious } from './utils';
+import { getExperiment } from './utils/experiments';
 import { WormholeConnectConfig } from './config/types';
 import { setConfig } from './config';
 import config from './config';
@@ -20,6 +27,7 @@ import { useExternalSearch } from 'hooks/useExternalSearch';
 import BridgeV2 from 'views/v2/Bridge';
 import RedeemV2 from 'views/v2/Redeem';
 import TxHistory from 'views/v2/TxHistory';
+import BridgeV3 from 'views/v3/Bridge';
 import { RouteContext } from 'contexts/RouteContext';
 import SvgDefs from 'icons/SvgDefs';
 import { Box } from '@mui/material';
@@ -55,6 +63,11 @@ const AppRouterContent: React.FC = () => {
     }
   }, [hasExternalSearch, dispatch]);
 
+  // TODO: Deprecate with UI refresh v3
+  const bridgeView = useMemo(() => {
+    return getExperiment('enableUIRefreshV3') ? <BridgeV3 /> : <BridgeV2 />;
+  }, []);
+
   return (
     <Box
       sx={{
@@ -64,7 +77,7 @@ const AppRouterContent: React.FC = () => {
         width: '100%',
         display: 'flex',
         justifyContent: 'center',
-        padding: '4px',
+        padding: '16px',
         fontFamily: theme.typography.fontFamily,
         [theme.breakpoints.down('sm')]: {
           margin: '0 auto',
@@ -72,7 +85,7 @@ const AppRouterContent: React.FC = () => {
       }}
     >
       <SvgDefs />
-      {route === 'bridge' && <BridgeV2 />}
+      {route === 'bridge' && bridgeView}
       {route === 'redeem' && <RedeemV2 />}
       {route === 'search' && <TxSearch />}
       {route === 'history' && <TxHistory />}

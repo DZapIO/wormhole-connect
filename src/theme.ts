@@ -9,6 +9,8 @@ export type WormholeConnectTheme = {
   mode: PaletteMode;
   // Background of surrounding application
   background?: PaletteMode;
+  // Background of the container surrounding form fields (asset pickers, amount input and confirm button)
+  formBackground?: PaletteMode;
   // Color of input fields, like asset picker and amount input
   input?: string;
   // Whether input fields will be transparent
@@ -31,14 +33,17 @@ export type WormholeConnectTheme = {
 
 type Color = { main: string };
 
+type BackgroundType = {
+  default: string;
+  form?: string;
+};
+
 export type InternalTheme = {
   mode: PaletteMode;
   primary: Color;
   secondary: Color;
   divider: string;
-  background: {
-    default: string;
-  };
+  background: BackgroundType;
   text: {
     primary: string;
     secondary: string;
@@ -75,6 +80,10 @@ export type InternalTheme = {
     border: string;
     fillTreatment: boolean;
   };
+  formContainer?: {
+    background: string;
+    border: string;
+  };
   font: string;
   logo: string;
 };
@@ -86,6 +95,7 @@ export const light: InternalTheme = {
   divider: '#a0a2a9',
   background: {
     default: 'transparent',
+    form: '#ffffff',
   },
   text: {
     primary: grey[900],
@@ -132,11 +142,12 @@ export const light: InternalTheme = {
 // wormhole styled theme
 export const dark: InternalTheme = {
   mode: 'dark',
-  primary: { main: '#C1BBF6' },
+  primary: { main: '#AFA7F6' },
   secondary: { main: '#667085' },
   divider: '#ffffff' + OPACITY[20],
   background: {
     default: 'transparent',
+    form: '#333333',
   },
   text: {
     primary: '#ffffff',
@@ -178,8 +189,8 @@ export const dark: InternalTheme = {
     elevation: 'none',
   },
   input: {
-    background: '#1a1928',
-    border: '#1e1f35',
+    background: '#1B1A21',
+    border: '#2B2A2E',
     fillTreatment: true,
   },
   font: '"Inter", sans-serif',
@@ -245,14 +256,14 @@ export const generateTheme = (customTheme: WormholeConnectTheme): Theme => {
 
     if (primary.isDark()) {
       primaryText = primary.lightness(95).hex();
-      disabled = primary.alpha(0.4).hexa();
+      disabled = primary.alpha(0.5).hexa();
       disabledText = primary.lightness(95).alpha(0.9).hexa();
       action = primary.darken(0.15).hex();
       actionText = primary.lightness(80).hex();
       hover = primary.darken(0.05).hex();
     } else {
       primaryText = primary.lightness(5).hex();
-      disabled = primary.alpha(0.4).hexa();
+      disabled = primary.alpha(0.5).hexa();
       disabledText = primary.lightness(5).alpha(0.9).hexa();
       action = primary.lighten(0.05).hex();
       actionText = primary.lightness(0).hex();
