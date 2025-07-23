@@ -173,6 +173,7 @@ function AssetPicker(props: Props) {
         borderRadius: '50px',
         border: `1px solid ${theme.palette.input.border}`,
         background: Color(theme.palette.input.background).darken(0.2).hex(),
+        minWidth: '120px',
         '&:hover': {
           borderColor: theme.palette.primary.main,
         },
@@ -228,16 +229,20 @@ function AssetPicker(props: Props) {
       : undefined;
 
   const tokenPrice = useMemo(() => {
-    const amount = props.isSource ? amountInput : receiveAmount;
-    if (props.token && amount) {
-      return calculateUSDPrice(
-        getTokenPrice,
-        sdkAmount.parse(amount, props.token.decimals),
-        props.token,
-      );
+    const tokenAmount = props.isSource
+      ? amount
+      : props.quote?.destinationToken.amount;
+    if (props.token && tokenAmount) {
+      return calculateUSDPrice(getTokenPrice, tokenAmount, props.token);
     }
     return null;
-  }, [props.isSource, props.token, amountInput, receiveAmount, getTokenPrice]);
+  }, [
+    props.isSource,
+    props.quote?.destinationToken.amount,
+    props.token,
+    amount,
+    getTokenPrice,
+  ]);
 
   const amountUSDValue =
     props.token && tokenPrice ? (
