@@ -253,45 +253,76 @@ export const isEmptyObject = (value: object | null | undefined) => {
 
 export type ExplorerPathType = 'wallet' | 'tx' | 'token';
 
-export const getExplorerUrl = (
+// Helper function to append path while preserving query params
+const appendPathToUrl = (baseUrl: string, pathSegment: string): string => {
+  const url = new URL(baseUrl);
+
+  // Trim trailing slash from base pathname and leading slash from pathSegment
+  const basePath = url.pathname.replace(/\/+$/, '');
+  const segment = pathSegment.replace(/^\/+/, '');
+
+  url.pathname = `${basePath}/${segment}`;
+  return url.toString();
+};
+
+export const getTokenExplorerUrl = (
   chain: Chain,
   path: string,
-  pathType: ExplorerPathType,
 ): string | undefined => {
   const chainConfig = config.chains[chain];
-
   if (!chainConfig?.explorerUrl) {
     return undefined;
   }
 
   const baseUrl = chainConfig.explorerUrl;
 
-  switch (pathType) {
-    case 'wallet':
-      return chain === 'Aptos'
-        ? `${baseUrl}account/${path}`
-        : `${baseUrl}address/${path}`;
-    case 'tx':
-      return chain === 'Aptos'
-        ? `${baseUrl}txn/${path}`
-        : `${baseUrl}tx/${path}`;
+  switch (chain) {
+    case 'Sui':
+      return appendPathToUrl(baseUrl, `coin/${path}`);
+    case 'Aptos':
+      return appendPathToUrl(
+        baseUrl,
+        `${isHexString(path) ? 'fungible_asset' : 'coin'}/${path}`,
+      );
+    case 'Fantom':
+    case 'Solana':
+    case 'Fogo':
+      return `${baseUrl}address/${path}`;
     default:
-      switch (chain) {
-        case 'Sui':
-          return `${baseUrl}coin/${path}`;
-        case 'Aptos':
-          return `${baseUrl}${
-            isHexString(path) ? 'fungible_asset' : 'coin'
-          }/${path}`;
-        case 'Fantom':
-        case 'Solana':
-        case 'Fogo':
-          return `${baseUrl}address/${path}`;
-        default:
-          return `${baseUrl}token/${path}`;
-      }
+      return appendPathToUrl(baseUrl, `token/${path}`);
   }
 };
+
+export const getTransactionExplorerUrl = (
+  chain: Chain,
+  path: string,
+): string | undefined => {
+  const chainConfig = config.chains[chain];
+  if (!chainConfig?.explorerUrl) {
+    return undefined;
+  }
+
+  const baseUrl = chainConfig.explorerUrl;
+  return chain === 'Aptos'
+    ? appendPathToUrl(baseUrl, `txn/${path}`)
+    : appendPathToUrl(baseUrl, `tx/${path}`);
+};
+
+export const getWalletExplorerUrl = (
+  chain: Chain,
+  path: string,
+): string | undefined => {
+  const chainConfig = config.chains[chain];
+  if (!chainConfig?.explorerUrl) {
+    return undefined;
+  }
+
+  const baseUrl = chainConfig.explorerUrl;
+  return chain === 'Aptos'
+    ? appendPathToUrl(baseUrl, `account/${path}`)
+    : appendPathToUrl(baseUrl, `address/${path}`);
+};
+
 // Frankenstein tokens are wormhole-wrapped tokens that are not native to the chain
 // and likely have no liquidity.
 // An example of a Frankenstein token is wormhole-wrapped Arbitrum WETH on Solana.
