@@ -28,6 +28,7 @@ import Color from 'color';
 import AssetPickerDrawer from 'views/v3/Bridge/AssetPicker/PickerBottomSheet';
 import AssetPickerPopover from 'views/v3/Bridge/AssetPicker/PickerModal';
 import { calculateUSDPrice } from 'utils';
+import { formatWithCommas } from 'utils/formatNumber';
 
 type Props = {
   chain?: Chain | undefined;
@@ -435,7 +436,11 @@ function AssetPicker(props: Props) {
                   },
                 }}
                 variant="standard"
-                value={receiveAmount}
+                value={
+                  receiveAmount
+                    ? formatWithCommas(receiveAmount.toString())
+                    : ''
+                }
               />
             </Box>
           )}

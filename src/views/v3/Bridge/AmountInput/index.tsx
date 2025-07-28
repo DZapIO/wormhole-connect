@@ -19,6 +19,11 @@ import Box from '@mui/material/Box';
 import { Token } from 'config/tokens';
 import type { RootState } from 'store';
 import { useGetTokens } from 'hooks/useGetTokens';
+import {
+  formatWithCommas,
+  removeCommas,
+  isValidDecimalInput,
+} from 'utils/formatNumber';
 
 const INPUT_DEBOUNCE = 500;
 
@@ -33,7 +38,7 @@ const DebouncedTextField = memo(
     onChange: (event: string) => void;
     onDebouncedChange: (event: string) => void;
   }) => {
-    const [innerValue, setInnerValue] = useState<string>(value);
+    const [innerValue, setInnerValue] = useState<string>(value ?? '');
     const [isFocused, setIsFocused] = useState(false);
     const deferredOnChange = useDebouncedCallback(
       onDebouncedChange,
@@ -41,20 +46,18 @@ const DebouncedTextField = memo(
     );
 
     const onInnerChange: ChangeEventHandler<HTMLInputElement> = useCallback(
-      (e) => {
-        let value = e.target.value;
-        if (value === '.') value = '0.';
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = removeCommas(e.target.value);
 
-        const numValue = Number(value);
-
-        if (isNaN(numValue) || numValue < 0) {
-          // allows all but negative numbers
+        if (!isValidDecimalInput(value)) {
           return;
         }
 
-        setInnerValue(e.target.value);
-        onChange(e.target.value); // callback with no delay
-        deferredOnChange(e.target.value);
+        const formattedValue = formatWithCommas(value);
+
+        setInnerValue(formattedValue);
+        onChange(value);
+        deferredOnChange(value);
       },
       [deferredOnChange, onChange],
     );
@@ -63,9 +66,9 @@ const DebouncedTextField = memo(
     // The way we do this is by checking when the focus is not on the input component
     useEffect(() => {
       if (!isFocused) {
-        setInnerValue(value);
+        setInnerValue(formatWithCommas(value));
       }
-      // We should run this sife-effect only when the value changes
+      // We should run this side-effect only when the value changes
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [value]);
 
@@ -112,7 +115,7 @@ function AmountInput(props: Props) {
         fontSize: '32px',
         height: '32px',
       },
-      onWheel: (e) => {
+      onWheel: (e: React.WheelEvent<HTMLInputElement>) => {
         // IMPORTANT: We need to prevent the scroll behavior on number inputs.
         // Otherwise it'll increase/decrease the value when user scrolls on the input control.
         // See for details: https://github.com/mui/material-ui/issues/7960
@@ -177,7 +180,7 @@ function AmountInput(props: Props) {
               },
             }}
             variant="standard"
-            value={props.debouncedValue}
+            value={props.debouncedValue ?? ''}
             onChange={props.onChange}
             onDebouncedChange={props.onDebouncedChange}
           />
