@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { QuoteResult } from 'routes/operator';
 import { RootState } from 'store';
+import { formatMinAmount } from 'utils/formatNumber';
 import { isMinAmountError } from 'utils/sdkv2';
 
 export type AmountValidationResult = {
@@ -14,6 +15,7 @@ type Props = {
   balance?: sdkAmount.Amount | null;
   routes: string[];
   quotes: Record<string, QuoteResult | undefined>;
+  failedQuotes: Record<string, QuoteResult | undefined>;
   tokenSymbol: string;
   isLoading: boolean;
   disabled?: boolean;
@@ -25,7 +27,7 @@ export const useAmountValidation = (props: Props): AmountValidationResult => {
   // Min amount available
   const minAmount = useMemo(
     () =>
-      Object.values(props.quotes).reduce((minAmount, quoteResult) => {
+      Object.values(props.failedQuotes).reduce((minAmount, quoteResult) => {
         if (quoteResult?.success) {
           return minAmount;
         }
@@ -46,18 +48,15 @@ export const useAmountValidation = (props: Props): AmountValidationResult => {
           return minAmount;
         }
       }, undefined as sdkAmount.Amount | undefined),
-    [props.quotes],
+    [props.failedQuotes],
   );
 
   const allRoutesFailed = useMemo(() => {
-    if (Object.keys(props.quotes).length === 0) {
-      return false;
-    }
-
-    return props.routes.every((route) => {
-      return props.quotes[route]?.success === false;
-    });
-  }, [props.routes, props.quotes]);
+    return (
+      Object.keys(props.quotes).length === 0 &&
+      Object.keys(props.failedQuotes).length > 0
+    );
+  }, [props.quotes, props.failedQuotes]);
 
   // Don't show errors when no amount is set or it's loading
   if (!amount || props.disabled) {
@@ -75,7 +74,7 @@ export const useAmountValidation = (props: Props): AmountValidationResult => {
 
   if (allRoutesFailed) {
     if (minAmount) {
-      const formattedAmount = sdkAmount.display(minAmount);
+      const formattedAmount = formatMinAmount(minAmount);
       return {
         error: `Amount too small (min ~${formattedAmount} ${props.tokenSymbol})`,
       };
@@ -88,7 +87,7 @@ export const useAmountValidation = (props: Props): AmountValidationResult => {
 
   // MinQuote warnings information
   if (minAmount) {
-    const formattedAmount = sdkAmount.display(minAmount);
+    const formattedAmount = formatMinAmount(minAmount);
     return {
       warning: `More routes available for ${formattedAmount} ${props.tokenSymbol} or more.`,
     };
