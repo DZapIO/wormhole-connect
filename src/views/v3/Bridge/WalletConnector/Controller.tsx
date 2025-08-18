@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -17,9 +17,9 @@ import {
 } from 'material-ui-popup-state/hooks';
 
 import type { RootState } from 'store';
-import { disconnectWallet as disconnectFromStore } from 'store/wallet';
 import { TransferWallet } from 'utils/wallet';
 import { copyTextToClipboard, displayWalletAddress } from 'utils';
+import useWalletProvider from 'hooks/useWalletProvider';
 
 import config from 'config';
 import ExplorerLink from './ExplorerLink';
@@ -34,8 +34,8 @@ const COPY_MESSAGE_TIMOUT = 1000;
 
 // Renders the connected state for a wallet given the type (sending | receiving)
 const ConnectedWallet = (props: Props) => {
-  const dispatch = useDispatch();
   const theme = useTheme();
+  const { connectWallet, disconnectWallet } = useWalletProvider();
 
   const styles = useMemo(
     () => ({
@@ -61,11 +61,14 @@ const ConnectedWallet = (props: Props) => {
     [theme],
   );
 
-  const { isTransactionInProgress } = useSelector(
+  const { isTransactionInProgress, fromChain, toChain } = useSelector(
     (state: RootState) => state.transferInput,
   );
 
   const wallet = useSelector((state: RootState) => state.wallet[props.type]);
+
+  const selectedChain =
+    props.type === TransferWallet.SENDING ? fromChain : toChain;
 
   const [isOpen, setIsOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -75,10 +78,12 @@ const ConnectedWallet = (props: Props) => {
     popupId: `connected-wallet-popover-${props.type}`,
   });
 
-  const connectWallet = useCallback(() => {
+  const handleChangeWallet = useCallback(async () => {
+    if (!selectedChain) return;
     popupState?.close();
     setIsOpen(true);
-  }, [popupState]);
+    await connectWallet(selectedChain, props.type);
+  }, [selectedChain, props.type, connectWallet, popupState]);
 
   const copyAddress = useCallback(() => {
     copyTextToClipboard(wallet.address);
@@ -86,10 +91,11 @@ const ConnectedWallet = (props: Props) => {
     setIsCopied(true);
   }, [popupState, wallet.address]);
 
-  const disconnectWallet = useCallback(() => {
-    dispatch(disconnectFromStore(props.type));
+  const handleDisconnectWallet = useCallback(async () => {
+    if (!selectedChain) return;
+    await disconnectWallet(selectedChain, props.type);
     popupState?.close();
-  }, [dispatch, popupState, props.type]);
+  }, [disconnectWallet, popupState, selectedChain, props.type]);
 
   useEffect(() => {
     if (isCopied) {
@@ -150,10 +156,10 @@ const ConnectedWallet = (props: Props) => {
                   label={config.ui.explorer.label}
                 />
               ) : null}
-              <ListItemButton onClick={connectWallet}>
+              <ListItemButton onClick={handleChangeWallet}>
                 <Typography fontSize={14}>Change wallet</Typography>
               </ListItemButton>
-              <ListItemButton onClick={disconnectWallet}>
+              <ListItemButton onClick={handleDisconnectWallet}>
                 <Typography fontSize={14}>Disconnect</Typography>
               </ListItemButton>
             </List>

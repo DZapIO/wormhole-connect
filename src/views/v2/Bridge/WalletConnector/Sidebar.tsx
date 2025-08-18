@@ -23,10 +23,13 @@ import CloseIcon from '@mui/icons-material/Close';
 import config from 'config';
 import type { RootState } from 'store';
 import type { WalletData } from 'utils/wallet';
-import { TransferWallet, connectWallet } from 'utils/wallet';
+import { TransferWallet } from 'utils/wallet';
+import { isInternalProvider } from 'utils/wallet/InternalWalletProvider';
+import type { InternalWalletProvider } from 'utils/wallet/InternalWalletProvider';
 
 import AlertBannerV2 from 'components/v2/AlertBanner';
 import { useAvailableWallets } from 'hooks/useAvailableWallets';
+import useWalletProvider from 'hooks/useWalletProvider';
 import WalletIcon from 'icons/WalletIcons';
 import { validateWalletAddress } from 'utils/address';
 import { ReadOnlyWallet } from 'utils/wallet/ReadOnlyWallet';
@@ -45,6 +48,8 @@ type Props = {
 const WalletSidebar = (props: Props) => {
   const dispatch = useDispatch();
   const theme = useTheme();
+  const { walletProvider } = useWalletProvider();
+  const internalWalletProvider = walletProvider as InternalWalletProvider;
 
   const styles = useMemo(
     () => ({
@@ -123,9 +128,17 @@ const WalletSidebar = (props: Props) => {
       }
 
       onClose?.();
-      await connectWallet(propsType, selectedChain, walletInfo, dispatch);
+      try {
+        await internalWalletProvider.onWalletSelected(
+          walletInfo.wallet,
+          selectedChain,
+          propsType,
+        );
+      } catch (error) {
+        console.error('Failed to select wallet:', error);
+      }
     },
-    [selectedChain, propsType, onClose, dispatch],
+    [selectedChain, propsType, onClose, internalWalletProvider],
   );
 
   const submitAddress = useCallback(async () => {
@@ -151,23 +164,22 @@ const WalletSidebar = (props: Props) => {
 
     const wallet = new ReadOnlyWallet(nativeAddress, selectedChain);
 
-    const walletInfo: WalletData = {
-      name: wallet.getName(),
-      type: chainToPlatform(chainConfig.sdkName),
-      icon: wallet.getIcon(),
-      isReady: true,
-      wallet,
-    };
-
-    await connectWallet(
-      TransferWallet.RECEIVING,
-      selectedChain,
-      walletInfo,
-      dispatch,
-    );
-
     onClose?.();
-  }, [address, selectedChain, onClose, dispatch]);
+    try {
+      await internalWalletProvider.onWalletSelected(
+        wallet,
+        selectedChain,
+        TransferWallet.RECEIVING,
+      );
+    } catch (error) {
+      console.error('Failed to select wallet:', error);
+    }
+  }, [address, selectedChain, onClose, dispatch, internalWalletProvider]);
+
+  const handleClose = useCallback(() => {
+    internalWalletProvider.onWalletSelectCancelled();
+    props.onClose?.();
+  }, [internalWalletProvider, props.onClose]);
 
   const renderWalletOptions = useCallback(
     (wallets: WalletData[]): JSX.Element => {
@@ -234,7 +246,7 @@ const WalletSidebar = (props: Props) => {
                       : 'Connect a wallet'}
                   </Typography>
                   <Box sx={styles.smOnly}>
-                    <IconButton onClick={props.onClose} sx={{ padding: 0 }}>
+                    <IconButton onClick={handleClose} sx={{ padding: 0 }}>
                       <CloseIcon sx={{ height: '18px', width: '18px' }} />
                     </IconButton>
                   </Box>
@@ -299,20 +311,24 @@ const WalletSidebar = (props: Props) => {
     styles.addressField,
     styles.submitButton,
     props.type,
-    props.onClose,
     props.showAddressInput,
     search,
     renderWalletOptions,
     address,
     addressError,
     submitAddress,
+    handleClose,
   ]);
+
+  if (!isInternalProvider(walletProvider)) {
+    return null;
+  }
 
   return (
     <Drawer
       anchor="right"
       open={propsType && props.open}
-      onClose={() => props.onClose?.()}
+      onClose={handleClose}
       slotProps={{
         paper: {
           sx: styles.drawer,

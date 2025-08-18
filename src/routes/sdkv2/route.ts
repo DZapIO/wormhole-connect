@@ -16,14 +16,11 @@ import {
 } from '@wormhole-foundation/sdk';
 import type { Token } from 'config/tokens';
 
-import { SDKv2Signer } from './signer';
-
 import { amount as sdkAmount } from '@wormhole-foundation/sdk';
 import { AsyncCache } from 'utils/AsyncCache';
 import config, { getWormholeContextV2 } from 'config';
 import { sleep } from 'utils';
 import { isFrankensteinToken } from 'utils';
-import { TransferWallet } from 'utils/wallet';
 import { isNttToken } from 'utils/ntt';
 
 type Amount = sdkAmount.Amount;
@@ -267,7 +264,7 @@ export class SDKv2Route {
     sourceToken: Token,
     amount: Amount,
     fromChain: Chain,
-    senderAddress: string,
+    signer: Signer,
     toChain: Chain,
     recipientAddress: string,
     destToken: Token,
@@ -285,19 +282,6 @@ export class SDKv2Route {
 
     if (!quote.success) {
       throw quote.error;
-    }
-
-    let signer: Signer;
-
-    if (config.ui.testOptions?.enableHeadlessSigner) {
-      signer = await SDKv2Signer.fromPrivateKey(fromChain);
-    } else {
-      signer = await SDKv2Signer.fromChain(
-        fromChain,
-        senderAddress,
-        {},
-        TransferWallet.SENDING,
-      );
     }
 
     let receipt = await route.initiate(

@@ -44,7 +44,8 @@ import {
 import { TransferWallet } from 'utils/wallet';
 import TransactionDetails from 'views/v2/Redeem/TransactionDetails';
 import WalletSidebar from 'views/v2/Bridge/WalletConnector/Sidebar';
-import { useConnectToLastUsedWallet } from 'utils/wallet';
+import { useConnectToLastUsedWallet } from 'hooks/useConnectToLastUsedWallet';
+import useWalletProvider from 'hooks/useWalletProvider';
 
 import type { RootState } from 'store';
 import TxCompleteIcon from 'icons/TxComplete';
@@ -72,6 +73,7 @@ const Redeem = () => {
   const [isWalletSidebarOpen, setIsWalletSidebarOpen] = useState(false);
 
   const routeContext = React.useContext(RouteContext);
+  const { walletProvider, connectWallet } = useWalletProvider();
 
   const { sourceToken, destToken } = useGetRedeemTokens();
 
@@ -737,8 +739,8 @@ const Redeem = () => {
       const signer = await SDKv2Signer.fromChain(
         toChain,
         receivingWallet.address,
-        {},
         TransferWallet.RECEIVING,
+        walletProvider,
       );
 
       const finishPromise = (() => {
@@ -779,7 +781,13 @@ const Redeem = () => {
     routeName,
     toChain,
     token,
+    walletProvider,
   ]);
+
+  const handleConnectReceivingWallet = useCallback(async () => {
+    setIsWalletSidebarOpen(true);
+    await connectWallet(toChain, TransferWallet.RECEIVING);
+  }, [connectWallet, toChain]);
 
   // Main CTA button which has separate states for automatic and manual claims
   const actionButton = useMemo(() => {
@@ -842,7 +850,7 @@ const Redeem = () => {
           <Button
             variant="primary"
             sx={styles.actionButton}
-            onClick={() => setIsWalletSidebarOpen(true)}
+            onClick={handleConnectReceivingWallet}
           >
             <Typography textTransform="none">
               Connect receiving wallet
@@ -897,6 +905,7 @@ const Redeem = () => {
     isConnectedToReceivingWallet,
     claimError,
     handleManualClaim,
+    handleConnectReceivingWallet,
     dispatch,
     fromChain,
   ]);
