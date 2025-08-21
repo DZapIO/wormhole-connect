@@ -1,3 +1,4 @@
+import { useTheme } from '@mui/material/styles';
 import React, {
   useCallback,
   useContext,
@@ -6,33 +7,33 @@ import React, {
   useRef,
 } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useTheme } from '@mui/material/styles';
 
 import './App.css';
+import config, { setConfig } from './config';
+import type { WormholeConnectConfig } from './config/types';
 import type { RootState } from './store';
 import { clearRedeem } from './store/redeem';
 import { clearTransfer } from './store/transferInput';
 import { isEmptyObject, usePrevious } from './utils';
 import { getExperiment } from './utils/experiments';
-import type { WormholeConnectConfig } from './config/types';
-import { setConfig } from './config';
-import config from './config';
 
-import Terms from './views/Terms';
-import TxSearch from './views/TxSearch';
+import { useExternalSearch } from 'hooks/useExternalSearch';
 import { setRoute } from './store/router';
 import { clearWallets } from './store/wallet';
-import { useExternalSearch } from 'hooks/useExternalSearch';
+import Terms from './views/Terms';
+import TxSearch from './views/TxSearch';
 
+import { Box } from '@mui/material';
+import TabSelector from 'components/TabSelector';
+import { RouteContext } from 'contexts/RouteContext';
+import SvgDefs from 'icons/SvgDefs';
 import BridgeV2 from 'views/v2/Bridge';
 import RedeemV2 from 'views/v2/Redeem';
 import TxHistoryV2 from 'views/v2/TxHistory';
 import type { BridgeProps } from 'views/v3/Bridge';
 import BridgeV3 from 'views/v3/Bridge';
 import RedeemV3 from 'views/v3/Redeem';
-import { RouteContext } from 'contexts/RouteContext';
-import SvgDefs from 'icons/SvgDefs';
-import { Box } from '@mui/material';
+import ZapV3 from 'views/v3/Zap';
 
 const AppRouterContent: React.FC = () => {
   const theme = useTheme();
@@ -48,15 +49,32 @@ const AppRouterContent: React.FC = () => {
   useEffect(() => {
     const redeemRoute = 'redeem';
     const bridgeRoute = 'bridge';
+    const zapRoute = 'zap';
     // reset redeem state on leave
     if (prevRoute === redeemRoute && route !== redeemRoute) {
       dispatch(clearRedeem());
       dispatch(clearWallets());
       routeContext.clear();
     }
-    // reset transfer state on leave
+    // reset transfer state on leave from other routes (but not when switching between bridge and zap)
     const isEnteringBridge = route === bridgeRoute && prevRoute !== bridgeRoute;
-    if (isEnteringBridge && prevRoute !== 'history') {
+    const isEnteringZap = route === zapRoute && prevRoute !== zapRoute;
+    const isSwitchingBetweenBridgeAndZap =
+      (route === bridgeRoute && prevRoute === zapRoute) ||
+      (route === zapRoute && prevRoute === bridgeRoute);
+
+    if (
+      isEnteringBridge &&
+      prevRoute !== 'history' &&
+      !isSwitchingBetweenBridgeAndZap
+    ) {
+      dispatch(clearTransfer());
+    }
+    if (
+      isEnteringZap &&
+      prevRoute !== 'history' &&
+      !isSwitchingBetweenBridgeAndZap
+    ) {
       dispatch(clearTransfer());
     }
   }, [route, prevRoute, dispatch, routeContext]);
@@ -90,6 +108,13 @@ const AppRouterContent: React.FC = () => {
     );
   }, [UIRefreshV3Enabled, getBridgeView]);
 
+  const handleTabChange = useCallback(
+    (route: 'bridge' | 'zap') => {
+      dispatch(setRoute(route));
+    },
+    [dispatch],
+  );
+
   return (
     <Box
       sx={{
@@ -98,6 +123,7 @@ const AppRouterContent: React.FC = () => {
         maxWidth: '900px',
         width: '100%',
         display: 'flex',
+        flexDirection: 'column',
         justifyContent: 'center',
         fontFamily: theme.typography.fontFamily,
         [theme.breakpoints.down('sm')]: {
@@ -106,11 +132,13 @@ const AppRouterContent: React.FC = () => {
       }}
     >
       <SvgDefs />
+      {UIRefreshV3Enabled && <TabSelector onTabChange={handleTabChange} />}
       {route === 'bridge' && getBridgeView({ showHistory: false })}
       {route === 'redeem' && redeemView}
       {route === 'history' && txHistoryView}
       {route === 'search' && <TxSearch />}
       {route === 'terms' && <Terms />}
+      {route === 'zap' && UIRefreshV3Enabled && <ZapV3 showHistory={false} />}
     </Box>
   );
 };
