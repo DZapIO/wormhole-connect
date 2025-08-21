@@ -40,6 +40,7 @@
     "@aptos-labs/ts-sdk": "2.0.0",
     "@aptos-labs/wallet-adapter-core": "5.5.0",
     "@coral-xyz/anchor": "0.29.0",
+    "@dzapio/sdk": "^1.0.1",
     "@ledgerhq/devices": "6.27.1",
     "@ledgerhq/errors": "6.10.2",
     "@ledgerhq/hw-transport": "6.27.1",
