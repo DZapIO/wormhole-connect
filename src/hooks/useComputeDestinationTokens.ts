@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 
 import config from 'config';
@@ -13,7 +13,6 @@ type Props = {
   sourceChain: Chain | undefined;
   sourceToken: Token | undefined;
   destChain: Chain | undefined;
-  route?: string;
 };
 
 type ReturnProps = {
@@ -21,87 +20,77 @@ type ReturnProps = {
   isFetching: boolean;
 };
 
+/**
+ * Compute the destination tokens for a given source token and chains.
+ * This handles three cases:
+ * 1. No source chain selected - returns all tokens on destination chain
+ * 2. Both chains selected with source token - fetches supported destination tokens from routes
+ * 3. Both chains selected without source token - returns empty array
+ */
+const computeDestTokensForChains = async (
+  sourceChain: Chain | undefined,
+  destChain: Chain | undefined,
+  sourceToken: Token | undefined,
+  getOrFetchToken: (tokenId: TokenId) => Promise<Token | undefined>,
+): Promise<Token[]> => {
+  if (!destChain) {
+    return [];
+  }
+
+  // User hasn't selected a source chain yet, so we
+  // return all of the known tokens on the destination chain.
+  if (!sourceChain) {
+    return config.tokens.getAllForChain(destChain);
+  }
+
+  // Both chains selected - fetch supported tokens from routes
+  const supportedTokenIds = await config.routes.allSupportedDestTokens(
+    sourceToken,
+    sourceChain,
+    destChain,
+  );
+
+  const tokens = await Promise.all(supportedTokenIds.map(getOrFetchToken));
+  const supportedTokens = tokens.filter((token) => !!token);
+
+  return supportedTokens;
+};
+
 const useComputeDestinationTokens = (props: Props): ReturnProps => {
   const { sourceChain, destChain, sourceToken } = props;
 
   const dispatch = useDispatch();
+  const { getOrFetchToken, lastTokenCacheUpdate } = useTokens();
 
   const [supportedDestTokens, setSupportedDestTokens] = useState<Token[]>([]);
   const [isFetching, setIsFetching] = useState(false);
 
-  const { getOrFetchToken, lastTokenCacheUpdate } = useTokens();
+  const computeDestTokens = useCallback(async () => {
+    setSupportedDestTokens([]);
+    setIsFetching(true);
 
-  useEffect(() => {
-    if (!destChain) {
-      return;
-    }
+    try {
+      const supported = await computeDestTokensForChains(
+        sourceChain,
+        destChain,
+        sourceToken,
+        getOrFetchToken,
+      );
 
-    let active = true;
-
-    const computeDestTokens = async () => {
-      let supported: Token[] = [];
-
-      setSupportedDestTokens([]);
-
-      // Start fetching and setting all supported tokens
-
-      if (!sourceChain && destChain) {
-        // User hasn't selected a source chain yet, so we
-        // return all of the known tokens on the destination chain.
-        supported = config.tokens.getAllForChain(destChain);
-      } else if (sourceChain && destChain) {
-        let supportedIds: TokenId[] = [];
-        setIsFetching(true);
-
-        try {
-          supportedIds = await config.routes.allSupportedDestTokens(
-            sourceToken,
-            sourceChain,
-            destChain,
-          );
-        } catch (e) {
-          console.error(e);
-        }
-
-        await Promise.all(
-          supportedIds.map(async (tokenId) => {
-            const t = await getOrFetchToken(tokenId);
-            if (t) {
-              supported.push(t);
-            }
-          }),
-        );
-
-        // Done fetching and setting all supported tokens
-        setIsFetching(false);
-      } else {
-        return;
-      }
-
-      if (!active) {
-        return;
-      }
       setSupportedDestTokens(supported);
 
       // Auto-select if there's only one option
       if (destChain && supported.length === 1) {
         dispatch(setDestToken(supported[0].tuple));
       }
-    };
+    } finally {
+      setIsFetching(false);
+    }
+  }, [sourceToken, sourceChain, destChain, dispatch, getOrFetchToken]);
 
+  useEffect(() => {
     computeDestTokens();
-
-    return () => {
-      active = false;
-    };
-  }, [
-    sourceToken,
-    sourceChain,
-    destChain,
-    dispatch,
-    lastTokenCacheUpdate,
-    getOrFetchToken,
-  ]);
+  }, [computeDestTokens, lastTokenCacheUpdate]);
 
   return {
     supportedDestTokens,
