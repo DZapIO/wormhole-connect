@@ -56,7 +56,6 @@ import TxHistory from '../TxHistory';
 import AmountValidationError from '../Bridge/AmountValidationError';
 import { useTokens } from 'contexts/TokensContext';
 import { useZapQuotes } from 'hooks/useZapQuotes';
-import Routes from './Routes';
 import Button from 'components/v3/Button';
 
 export type ZapProps = {

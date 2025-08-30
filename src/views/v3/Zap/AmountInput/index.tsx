@@ -18,7 +18,7 @@ import Box from '@mui/material/Box';
 
 import type { Token } from 'config/tokens';
 import type { RootState } from 'store';
-import { useGetTokens } from 'hooks/useGetTokens';
+
 import {
   formatWithCommas,
   removeCommas,

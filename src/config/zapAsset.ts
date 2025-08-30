@@ -1,8 +1,4 @@
-import type {
-  ProviderDetails,
-  ZappingPoolTokenData,
-  ZappingPositionTokenData,
-} from '@dzapio/sdk';
+import type { ZapPool, ZapPosition } from '@dzapio/sdk';
 import type { Chain, TokenAddress, TokenId } from '@wormhole-foundation/sdk';
 import { isNative, toNative, chainToPlatform } from '@wormhole-foundation/sdk';
 import type { TokenTuple } from './tokens';
@@ -14,21 +10,15 @@ import { canonicalAddress, UniversalAddress } from '@wormhole-foundation/sdk';
 import type { WrappedTokenAddresses, ZapAssetConfig } from './types';
 // Import types from the actual dzapio/sdk
 export type {
-  ZappingChains,
-  ZappingPoolDetails,
-  ZappingPools,
-  ZappingPoolTokenData,
-  ZappingPositions,
-  ZappingPositionTokenData,
+  ZapChains,
+  ZapPoolDetails,
+  ZapPool,
+  ZapPosition,
   ZapPoolDetailsRequest,
   ZapPoolsRequest,
   ZapPositionsRequest,
-  ZappingProviders,
+  ZapProviders,
 } from '@dzapio/sdk';
-
-// Re-export for convenience and add local types
-export type ZapPosition = ZappingPositionTokenData;
-export type ZapPool = ZappingPoolTokenData;
 
 // Union type for zap data (positions or pools from SDK)
 export type ZapData = ZapPosition | ZapPool;

@@ -46,7 +46,7 @@ export function cacheZapPosition(
     18, // Default decimals for positions
     position.name || 'Position',
     position.name,
-    position.underlyingAssets?.[0]?.logo,
+    position.underlyingAssets?.[0]?.logo ?? '',
     provider,
     undefined, // nftId - will be set from the API response separately
   );

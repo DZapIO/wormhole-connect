@@ -3,11 +3,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import type { Chain } from '@wormhole-foundation/sdk';
 import { amount } from '@wormhole-foundation/sdk';
 import config from 'config';
-import type {
-  ZapAssetTuple,
-  ZappingChains,
-  ZappingProviders,
-} from 'config/zapAsset';
+import type { ZapAssetTuple, ZapChains, ZapProviders } from 'config/zapAsset';
 import { TransferWallet, walletAcceptedChains } from 'utils/wallet';
 import type { DataWrapper } from './helpers';
 import {
@@ -50,8 +46,8 @@ export interface ZapInputState {
   };
   isTransactionInProgress: boolean;
   receiverNativeBalance: string | undefined;
-  providers: ZappingProviders;
-  zappingChains: ZappingChains;
+  providers: ZapProviders;
+  zappingChains: ZapChains;
 }
 
 // This is a function because config might have changed since we last cleared this store
@@ -242,13 +238,10 @@ export const zapInputSlice = createSlice({
     ) => {
       state.isTransactionInProgress = payload;
     },
-    setZappingProviders: (
-      state,
-      { payload }: PayloadAction<ZappingProviders>,
-    ) => {
+    setZappingProviders: (state, { payload }: PayloadAction<ZapProviders>) => {
       state.providers = payload;
     },
-    setZappingChains: (state, { payload }: PayloadAction<ZappingChains>) => {
+    setZappingChains: (state, { payload }: PayloadAction<ZapChains>) => {
       state.zappingChains = payload;
     },
     swapInputs: (state: ZapInputState) => {

@@ -2,7 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import type { Chain, amount as sdkAmount } from '@wormhole-foundation/sdk';
 import type { RootState } from 'store';
-import type { ZapPath, ZapQuoteRequest, ZapQuoteResponse } from '@dzapio/sdk';
+import type {
+  HexString,
+  ZapPath,
+  ZapQuoteRequest,
+  ZapQuoteResponse,
+} from '@dzapio/sdk';
 import { useZap } from 'contexts/ZapContext';
 import type { ZapAsset } from 'config/zapAsset';
 import { getChainId } from 'utils/chainMapping';
@@ -119,14 +124,15 @@ const useFetchZapQuotes = (params: ZapQuoteParams): HookReturn => {
         }
 
         const zapQuoteRequest: ZapQuoteRequest = {
-          srcToken: params.sourceToken?.address ?? '',
+          srcToken: (params.sourceToken?.address as HexString) ?? '',
           srcChainId,
-          destToken: params.destToken?.address ?? '',
+          destToken: (params.destToken?.address as HexString) ?? '',
           destChainId,
-          recipient: params.recipient,
-          refundee: params.refundee || params.recipient,
+          recipient: params.recipient as HexString,
+          refundee:
+            (params.refundee as HexString) || (params.recipient as HexString),
           slippage: params.slippage,
-          account: params.recipient,
+          account: params.recipient as HexString,
           amount: params.amount?.amount.toString() ?? '',
           positionDetails: params.positionDetails,
           poolDetails: params.poolDetails,

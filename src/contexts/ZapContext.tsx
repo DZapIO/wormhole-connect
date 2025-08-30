@@ -1,30 +1,31 @@
+import type { HexString } from '@dzapio/sdk';
+import { DZapClient } from '@dzapio/sdk';
 import type { Chain } from '@wormhole-foundation/sdk';
 import { toNative } from '@wormhole-foundation/sdk';
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  type ReactNode,
-  useEffect,
-} from 'react';
-import { DZapClient } from '@dzapio/sdk';
 import config, { clearWormholeContextV2 } from 'config';
 import type {
   ZapAsset,
   ZapAssetId,
-  ZapPosition,
   ZapPool,
-  ZapPositionsRequest,
-  ZapPoolsRequest,
+  ZapPoolDetails,
   ZapPoolDetailsRequest,
-  ZappingPoolDetails,
+  ZapPoolsRequest,
+  ZapPosition,
+  ZapPositionsRequest,
 } from 'config/zapAsset';
 import { ZapAssetType } from 'config/zapAsset';
-import { cacheZapPools, cacheZapPositions } from 'utils/zapAssetCache';
-import { getChainFromId } from 'utils/chainMapping';
-import { setZappingChains, setZappingProviders } from 'store/zap';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useDispatch } from 'react-redux';
+import { setZappingChains, setZappingProviders } from 'store/zap';
+import { getChainFromId } from 'utils/chainMapping';
+import { cacheZapPools, cacheZapPositions } from 'utils/zapAssetCache';
 
 interface ZapContextType {
   getOrFetchZapAsset: (zapAssetId: ZapAssetId) => Promise<ZapAsset | undefined>;
@@ -50,7 +51,7 @@ interface ZapContextType {
   getZapPools: (request: ZapPoolsRequest) => Promise<ZapPool[]>;
   getZapPoolDetails: (
     request: ZapPoolDetailsRequest,
-  ) => Promise<ZappingPoolDetails>;
+  ) => Promise<ZapPoolDetails>;
 
   getSupportedChains: () => Promise<Chain[]>;
   getSupportedProviders: () => Promise<string[]>;
@@ -135,7 +136,7 @@ export const ZapProvider: React.FC<ZapProviderProps> = ({ children }) => {
   );
 
   const getZapPoolDetails = useCallback(
-    async (request: ZapPoolDetailsRequest): Promise<ZappingPoolDetails> => {
+    async (request: ZapPoolDetailsRequest): Promise<ZapPoolDetails> => {
       return await sdk.getZapPoolDetails(request);
     },
     [sdk],
@@ -284,7 +285,7 @@ export const ZapProvider: React.FC<ZapProviderProps> = ({ children }) => {
         const request: ZapPositionsRequest = {
           chainId,
           provider,
-          account: walletAddress,
+          account: walletAddress as HexString,
         };
 
         const fetchedPositions = await getZapPositions(request);
