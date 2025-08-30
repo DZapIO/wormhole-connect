@@ -37,6 +37,7 @@ const PoolList = (props: Props) => {
   });
 
   const sortedPools = pools;
+  console.log('pools', { sortedPools });
 
   const emptyMessage = useMemo(() => {
     let message = '';

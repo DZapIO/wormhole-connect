@@ -61,7 +61,11 @@ function AssetPicker(props: Props) {
   const theme: any = useTheme();
   const dispatch = useDispatch();
   const mobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const { amount } = useSelector((state: RootState) => state.zapInput);
+  const {
+    amount,
+    token: zapToken,
+    fromChain,
+  } = useSelector((state: RootState) => state.zapInput);
   const { getTokenPrice } = useTokens();
 
   const [showChainSearch, setShowChainSearch] = useState(false);
@@ -296,8 +300,9 @@ function AssetPicker(props: Props) {
     (newValue: string): void => {
       dispatch(setAmount(newValue));
       setDebouncedAmountInput(newValue);
+      console.log('newValue', newValue);
     },
-    [dispatch],
+    [dispatch, amount, props.chain, props.token, zapToken, fromChain],
   );
 
   const handleChainSelect = useCallback(

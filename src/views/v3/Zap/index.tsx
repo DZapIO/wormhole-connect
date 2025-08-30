@@ -24,6 +24,7 @@ import Header from 'components/Header';
 import AlertBannerV3 from 'components/v3/AlertBanner';
 import config from 'config';
 import type { Token } from 'config/tokens';
+import type { ZapAsset } from 'config/zapAsset';
 import { ZapAssetType } from 'config/zapAsset';
 
 import { useConnectToLastUsedWallet } from 'hooks/useConnectToLastUsedWallet';
@@ -159,9 +160,10 @@ function Zap(props: ZapProps) {
   // Get the actual zap asset data (for pools and positions) - for future use
   const sourceToken = useMemo(() => {
     if (!sourceZapAsset) return undefined;
-
     const [chain, address, type, provider, nftId] = sourceZapAsset;
-
+    if (type === ZapAssetType.TOKEN) {
+      return config.tokens.get(chain, address);
+    }
     if (type === ZapAssetType.POOL || type === ZapAssetType.POSITION) {
       return config.zapAssets.get(
         chain,
@@ -179,7 +181,9 @@ function Zap(props: ZapProps) {
     if (!destZapAsset) return undefined;
 
     const [chain, address, type, provider, nftId] = destZapAsset;
-
+    if (type === ZapAssetType.TOKEN) {
+      return config.tokens.get(chain, address);
+    }
     if (type === ZapAssetType.POOL || type === ZapAssetType.POSITION) {
       return config.zapAssets.get(
         chain,
@@ -239,8 +243,19 @@ function Zap(props: ZapProps) {
 
   // Get tokens for source chain (for token selection within unified picker)
   const sourceTokens = useMemo(() => {
+    const sourceAssets: (Token | ZapAsset)[] = [];
     if (sourceChain) {
-      return config.tokens.getAllForChain(sourceChain);
+      const [, , type, provider] = sourceZapAsset || [];
+      if (type === ZapAssetType.POSITION && provider) {
+        const zapPositions =
+          config.zapAssets.getAllPositionsForChainAndProvider(
+            sourceChain,
+            provider,
+          );
+        sourceAssets.push(...zapPositions);
+      }
+      sourceAssets.push(...config.tokens.getAllForChain(sourceChain));
+      return sourceAssets;
     } else {
       return [];
     }
@@ -305,7 +320,12 @@ function Zap(props: ZapProps) {
   const handleSourceZapAssetChange = useCallback(
     (value: Token) => {
       // Convert Token to ZapAssetTuple for tokens
-      const zapAssetTuple = [value.chain, value.address, ZapAssetType.TOKEN];
+      const zapAssetTuple = [
+        value.chain,
+        value.addressString,
+        ZapAssetType.TOKEN,
+      ];
+      console.log('zapAssetTuple', zapAssetTuple);
       dispatch(setToken(zapAssetTuple as any));
     },
     [dispatch],
@@ -550,6 +570,8 @@ function Zap(props: ZapProps) {
     isFetchingQuotes,
   ]);
 
+  console.log('sourceToken', sourceToken);
+  console.log('destToken', destToken);
   const bridgeContent = (
     <>
       <Stack sx={{ gap: '4px', position: 'relative' }}>

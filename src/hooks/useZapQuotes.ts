@@ -4,6 +4,7 @@ import useFetchZapQuotes from 'hooks/useFetchZapQuotes';
 import type { ZapQuoteParams, ZapQuoteResult } from 'hooks/useFetchZapQuotes';
 import type { ZapAsset } from 'config/zapAsset';
 import type { WalletData } from 'store/wallet';
+import type { Token } from 'config/tokens';
 
 type HookReturn = {
   quote: ZapQuoteResult | undefined;
@@ -15,8 +16,8 @@ interface UseSortedZapQuotesArgs {
   fromChain?: Chain;
   toChain?: Chain;
   slippage: number;
-  sourceToken?: ZapAsset;
-  destToken?: ZapAsset;
+  sourceToken?: ZapAsset | Token;
+  destToken?: ZapAsset | Token;
   receivingWallet: WalletData;
   positionDetails?: {
     nftId: string;

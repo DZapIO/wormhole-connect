@@ -11,13 +11,14 @@ import type {
 import { useZap } from 'contexts/ZapContext';
 import type { ZapAsset } from 'config/zapAsset';
 import { getChainId } from 'utils/chainMapping';
+import type { Token } from 'config/tokens';
 
 export type ZapQuoteParams = {
   amount?: sdkAmount.Amount;
   sourceChain?: Chain;
-  sourceToken?: ZapAsset;
+  sourceToken?: ZapAsset | Token;
   destChain?: Chain;
-  destToken?: ZapAsset;
+  destToken?: ZapAsset | Token;
   slippage: number;
   recipient?: string;
   refundee?: string;

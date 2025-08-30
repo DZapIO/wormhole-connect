@@ -500,6 +500,23 @@ export class ZapAssetMapping<T> {
       .map(([, value]) => value);
   }
 
+  getAllPositionsForChainAndProvider(chain: Chain, provider: string): T[] {
+    return Array.from(this._mapping.entries())
+      .filter(([key]) => {
+        try {
+          const zapAssetId = parseZapAssetKey(key);
+          return (
+            zapAssetId.chain === chain &&
+            zapAssetId.type === ZapAssetType.POSITION &&
+            zapAssetId.provider === provider
+          );
+        } catch {
+          return false;
+        }
+      })
+      .map(([, value]) => value);
+  }
+
   getAll(): T[] {
     return Array.from(this._mapping.values());
   }
