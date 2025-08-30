@@ -1,8 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Box, Card, CardContent, Skeleton, useTheme } from '@mui/material';
 import ListItemButton from '@mui/material/ListItemButton';
 import Typography from '@mui/material/Typography';
-import { toNative } from '@wormhole-foundation/sdk';
 
 import type { ChainConfig } from 'config/types';
 import type { Token } from 'config/tokens';
@@ -11,8 +10,8 @@ import SearchableList from 'views/v2/Bridge/AssetPicker/SearchableList';
 import TokenItem from 'views/v2/Bridge/AssetPicker/TokenItem';
 import { getUSDFormat, calculateUSDPriceRaw } from 'utils';
 import config from 'config';
-import { useTokens } from 'contexts/TokensContext';
 import type { Balances } from 'utils/wallet/types';
+import { useTokenListWithSearch } from 'hooks/useTokenListWithSearch';
 
 type Props = {
   tokenList: Array<Token>;
@@ -35,45 +34,18 @@ type Props = {
 const TokenList = (props: Props) => {
   const theme = useTheme();
   const tokenPastingIsEnabled = config.ui.disableUserInputtedTokens !== true;
-  const [tokenPrices, setTokenPrices] = useState<
-    Map<string, number | undefined>
-  >(new Map());
 
-  const { getOrFetchToken, getTokenPrices, lastTokenPriceUpdate } = useTokens();
-
-  // Get token prices using the synchronous hook pattern
-  // Re-calculate when token list or price updates occur
-  useEffect(() => {
-    const prices = getTokenPrices(props.tokenList);
-    setTokenPrices(prices);
-  }, [props.tokenList, getTokenPrices, lastTokenPriceUpdate]);
-
-  useEffect(() => {
-    // When the search query or chain changes, see if the search query is a valid address on the selected chain.
-    // If it is, see if we have a token in the token cache for that address.
-    // If not, try to find it.
-    if (tokenPastingIsEnabled) {
-      try {
-        if (props.searchQuery !== '') {
-          const chain = props.selectedChainConfig.sdkName;
-          const address = toNative(chain, props.searchQuery);
-
-          if (address) {
-            const existing = config.tokens.get(chain, props.searchQuery);
-            if (!existing) {
-              getOrFetchToken({ chain, address });
-            }
-          }
-        }
-      } catch (_e) {
-        // Failed to parse the search query as an address... this is expected to happen a lot
-      }
-    }
-    // Run the side-effect only when search query or chain changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.searchQuery, props.selectedChainConfig.sdkName]);
-
-  const sortedTokens = props.tokenList;
+  const { sortedTokens, tokenPrices } = useTokenListWithSearch({
+    baseTokenList: props.tokenList,
+    searchQuery: props.searchQuery,
+    chain: props.selectedChainConfig.sdkName,
+    isSource: props.isSource,
+    isSameChainSwap: props.isSameChainSwap,
+    sourceToken: props.sourceToken,
+    balances: props.balances,
+    walletAddress: props.wallet.address,
+    tokenPastingEnabled: tokenPastingIsEnabled,
+  });
 
   const emptyMessage = useMemo(() => {
     let message = '';
@@ -156,9 +128,6 @@ const TokenList = (props: Props) => {
     props.isConnectingWallet,
     props.isFetching,
     props.isFetchingBalances,
-    props.isSource,
-    props.balances,
-    tokenPrices,
     sortedTokens.length,
   ]);
 
@@ -200,45 +169,6 @@ const TokenList = (props: Props) => {
       onQueryChange={(query) => {
         props.onSearchQueryChange(query);
       }}
-      filterFn={(token, query) => {
-        if (query.length === 0) return true;
-
-        if (
-          !props.isSource &&
-          props.isSameChainSwap &&
-          token.addressString === props.sourceToken?.addressString
-        ) {
-          // For same chain swaps don't show the source token
-          // when we are filtering the destination token list.
-          // For source token list allow showing the same token
-          // which will automatically adjust the destination token
-          // when selected.
-          return false;
-        }
-
-        const queryLC = query.toLowerCase();
-
-        const symbolMatch = [token.symbol, token.name].some((criteria) =>
-          criteria?.toLowerCase()?.startsWith?.(queryLC),
-        );
-        if (symbolMatch) return true;
-
-        if (token.address.toString().toLowerCase() === queryLC) {
-          return true;
-        }
-
-        if (
-          token.tokenBridgeOriginalTokenId &&
-          token.tokenBridgeOriginalTokenId.address
-            .toString()
-            .toLowerCase()
-            .includes(queryLC)
-        ) {
-          return true;
-        }
-
-        return false;
-      }}
       renderFn={(token: Token) => {
         const balance = props.balances?.[token.key]?.balance;
         const tokenPrice = tokenPrices.get(token.key);
@@ -259,6 +189,7 @@ const TokenList = (props: Props) => {
             price={price}
             isSelected={token.key === props.selectedToken?.key}
             isFetchingBalance={props.isFetchingBalances}
+            isSource={props.isSource}
           />
         );
       }}
