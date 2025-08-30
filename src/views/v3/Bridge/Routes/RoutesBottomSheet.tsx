@@ -56,7 +56,12 @@ function RoutesMobile({
       <Typography component={'span'} fontSize="16px" fontWeight={600}>
         Routes
       </Typography>
-      <IconButton sx={{ opacity: 0.5, padding: 0 }} onClick={onClose}>
+      <IconButton
+        sx={{ opacity: 0.5, padding: 0 }}
+        onClick={onClose}
+        aria-label="Close routes"
+        data-testid="routes-close-button"
+      >
         <CloseIcon sx={{ height: '24px', width: '24px' }} />
       </IconButton>
     </Box>
@@ -73,6 +78,7 @@ function RoutesMobile({
       }}
       onClick={onRouteConfirm}
       disabled={selectButtonDisabled}
+      aria-label="Select route"
       data-testid="select-route-button"
       fullWidth
     >

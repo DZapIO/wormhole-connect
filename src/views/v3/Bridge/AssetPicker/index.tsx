@@ -427,6 +427,12 @@ function AssetPicker(props: Props) {
               props.isTransactionInProgress && styles.disabled,
             ]}
             data-testid={props.dataTestId}
+            role="button"
+            aria-label={
+              props.isSource
+                ? 'Select source asset'
+                : 'Select destination asset'
+            }
             variant="elevation"
             onMouseDown={(e) => {
               if (mobile) {
