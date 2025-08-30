@@ -51,7 +51,7 @@ export const chainToChainId: Partial<Record<Chain, number>> = {
 /**
  * Maps chain ID numbers back to Chain names
  */
-export const chainIdToChain: Record<number, Chain> = Object.fromEntries(
+export const zapChainIdToChain: Record<number, Chain> = Object.fromEntries(
   Object.entries(chainToChainId)
     .filter(([_, id]) => id !== undefined)
     .map(([chain, id]) => [id!, chain as Chain]),
@@ -72,7 +72,7 @@ export function getChainId(chain: Chain): number | undefined {
  * @returns The Chain enum value, or undefined if not found
  */
 export function getChainFromId(chainId: number): Chain | undefined {
-  return chainIdToChain[chainId];
+  return zapChainIdToChain[chainId];
 }
 
 /**
@@ -81,7 +81,7 @@ export function getChainFromId(chainId: number): Chain | undefined {
  * @returns True if the chain ID exists in our mapping
  */
 export function isValidChainId(chainId: number): boolean {
-  return chainId in chainIdToChain;
+  return chainId in zapChainIdToChain;
 }
 
 /**

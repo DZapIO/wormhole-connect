@@ -1,22 +1,22 @@
-import React, { useMemo, useState } from 'react';
 import { Box, Card, CardContent, Skeleton, useTheme } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import ListItemButton from '@mui/material/ListItemButton';
 import Typography from '@mui/material/Typography';
+import React, { useMemo, useState } from 'react';
 
 import type { ChainConfig } from 'config/types';
-import type { ZapPosition } from 'config/zapAsset';
+import type { ZapAsset, ZapPosition } from 'config/zapAsset';
+import { usePositionList } from 'hooks/zap/usePositionList';
 import type { WalletData } from 'store/wallet';
+import { getChainId } from 'utils/chainMapping';
 import SearchableList from 'views/v3/Bridge/AssetPicker/SearchableList';
 import PositionItem from './PositionItem';
-import { usePositionList } from 'hooks/usePositionList';
-import { getChainId } from 'utils/chainMapping';
 
 type Props = {
   selectedChainConfig: ChainConfig;
   selectedPosition?: ZapPosition;
   wallet: WalletData;
-  onSelectPosition: (position: ZapPosition) => void;
+  onSelectPosition: (position: ZapAsset) => void;
   provider?: string;
   isConnectingWallet?: boolean;
 };
@@ -26,11 +26,7 @@ const PositionList = (props: Props) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch positions for the selected chain and provider
-  const {
-    positions,
-    loading: isFetching,
-    error: _positionsError,
-  } = usePositionList({
+  const { positions, loading: isFetching } = usePositionList({
     chainId: getChainId(props.selectedChainConfig.sdkName) || 0,
     provider: props.provider || '',
     walletAddress: props.wallet?.address,
@@ -126,7 +122,7 @@ const PositionList = (props: Props) => {
   const shouldShowEmptyMessage = listState === 'empty';
 
   const searchList = (
-    <SearchableList<ZapPosition>
+    <SearchableList<ZapAsset>
       searchPlaceholder={placeholder}
       sx={styles.positionList}
       dataTestId="position-search-list"
@@ -172,10 +168,10 @@ const PositionList = (props: Props) => {
 
         return false;
       }}
-      renderFn={(position: ZapPosition) => {
+      renderFn={(position: ZapAsset) => {
         return (
           <PositionItem
-            key={position.address || position.name}
+            key={position.address?.toString() || position.name}
             position={position}
             chain={props.selectedChainConfig.sdkName}
             onClick={() => {

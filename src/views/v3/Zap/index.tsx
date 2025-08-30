@@ -23,14 +23,16 @@ import FooterNavBar from 'components/FooterNavBar';
 import Header from 'components/Header';
 import AlertBannerV3 from 'components/v3/AlertBanner';
 import config from 'config';
-import type { Token } from 'config/tokens';
-import type { ZapAsset } from 'config/zapAsset';
-import { ZapAssetType } from 'config/zapAsset';
+import { type ZapAsset } from 'config/zapAsset';
 
 import { useConnectToLastUsedWallet } from 'hooks/useConnectToLastUsedWallet';
 import useGetTokenBalances from 'hooks/useGetTokenBalances';
 
+import Button from 'components/v3/Button';
+import { useTokens } from 'contexts/TokensContext';
+import { useGetZapAssets } from 'hooks/zap/useGetZapAssets';
 import { useWalletCompatibility } from 'hooks/useWalletCompatibility';
+import { useZapQuotes } from 'hooks/zap/useZapQuotes';
 import HistoryIcon from 'icons/History';
 import PoweredByIcon from 'icons/PoweredBy';
 import type { RootState } from 'store';
@@ -44,20 +46,17 @@ import {
   setTransferRoute,
 } from 'store/zap';
 import { copyTextToClipboard } from 'utils';
-import { getFilteredChains } from 'utils/sdkv2';
 import { getChainFromId } from 'utils/chainMapping';
+import { getFilteredChains } from 'utils/sdkv2';
 import { OPACITY } from 'utils/style';
 import { useValidate } from 'utils/transferValidation';
 import { TransferWallet } from 'utils/wallet';
-import AssetPicker from 'views/v3/Zap/AssetPicker';
 import SwapInputs from 'views/v3/Bridge/SwapInputs';
 import WalletConnector from 'views/v3/Bridge/WalletConnector';
 import TxHistoryWidget from 'views/v3/TxHistory/Widget';
-import TxHistory from '../TxHistory';
+import AssetPicker from 'views/v3/Zap/AssetPicker';
 import AmountValidationError from '../Bridge/AmountValidationError';
-import { useTokens } from 'contexts/TokensContext';
-import { useZapQuotes } from 'hooks/useZapQuotes';
-import Button from 'components/v3/Button';
+import TxHistory from '../TxHistory';
 
 export type ZapProps = {
   showHistory?: boolean;
@@ -153,51 +152,7 @@ function Zap(props: ZapProps) {
   );
   const isSameChainSwap = sourceChain === destChain;
 
-  // --- pipeline usage ---
-  // Convert zapAssets back to tokens for compatibility with existing components
-  // For backward compatibility with existing components that expect Token objects
-  // Only return Token objects for token assets, undefined for pools/positions
-  // Get the actual zap asset data (for pools and positions) - for future use
-  const sourceToken = useMemo(() => {
-    if (!sourceZapAsset) return undefined;
-    const [chain, address, type, provider, nftId] = sourceZapAsset;
-    if (type === ZapAssetType.TOKEN) {
-      return config.tokens.get(chain, address);
-    }
-    if (type === ZapAssetType.POOL || type === ZapAssetType.POSITION) {
-      return config.zapAssets.get(
-        chain,
-        address,
-        type as ZapAssetType,
-        provider,
-        nftId,
-      );
-    }
-
-    return undefined;
-  }, [sourceZapAsset]);
-
-  const destToken = useMemo(() => {
-    if (!destZapAsset) return undefined;
-
-    const [chain, address, type, provider, nftId] = destZapAsset;
-    if (type === ZapAssetType.TOKEN) {
-      return config.tokens.get(chain, address);
-    }
-    if (type === ZapAssetType.POOL || type === ZapAssetType.POSITION) {
-      return config.zapAssets.get(
-        chain,
-        address,
-        type as ZapAssetType,
-        provider,
-        nftId,
-      );
-    }
-
-    return undefined;
-  }, [destZapAsset]);
-
-  console.log({ sourceToken, destToken });
+  const { sourceToken, destToken } = useGetZapAssets();
 
   const { quote, isFetching: isFetchingQuotes } = useZapQuotes({
     amount,
@@ -243,19 +198,8 @@ function Zap(props: ZapProps) {
 
   // Get tokens for source chain (for token selection within unified picker)
   const sourceTokens = useMemo(() => {
-    const sourceAssets: (Token | ZapAsset)[] = [];
     if (sourceChain) {
-      const [, , type, provider] = sourceZapAsset || [];
-      if (type === ZapAssetType.POSITION && provider) {
-        const zapPositions =
-          config.zapAssets.getAllPositionsForChainAndProvider(
-            sourceChain,
-            provider,
-          );
-        sourceAssets.push(...zapPositions);
-      }
-      sourceAssets.push(...config.tokens.getAllForChain(sourceChain));
-      return sourceAssets;
+      return config.tokens.getAllForChain(sourceChain);
     } else {
       return [];
     }
@@ -283,7 +227,7 @@ function Zap(props: ZapProps) {
       };
     }
     return undefined;
-  }, [sourceChain, sendingWallet, sourceTokens]);
+  }, [sourceChain, sendingWallet, sourceTokens, sourceToken]);
 
   const destBalanceRequest = useMemo(() => {
     if (destChain && receivingWallet?.address) {
@@ -318,47 +262,10 @@ function Zap(props: ZapProps) {
   );
 
   const handleSourceZapAssetChange = useCallback(
-    (value: Token) => {
-      // Convert Token to ZapAssetTuple for tokens
-      const zapAssetTuple = [
-        value.chain,
-        value.addressString,
-        ZapAssetType.TOKEN,
-      ];
-      console.log('zapAssetTuple', zapAssetTuple);
-      dispatch(setToken(zapAssetTuple as any));
+    (value: ZapAsset) => {
+      dispatch(setToken(value.tuple));
     },
     [dispatch],
-  );
-
-  // Handlers for pool and position selection
-  const handleSourcePoolSelect = useCallback(
-    (pool: any) => {
-      // Convert pool to ZapAssetTuple
-      const zapAssetTuple = [
-        sourceChain!,
-        pool.address,
-        ZapAssetType.POOL,
-        pool.provider,
-      ];
-      dispatch(setToken(zapAssetTuple as any));
-    },
-    [dispatch, sourceChain],
-  );
-
-  const handleSourcePositionSelect = useCallback(
-    (position: any) => {
-      // Convert position to ZapAssetTuple
-      const zapAssetTuple = [
-        sourceChain!,
-        position.address,
-        ZapAssetType.POSITION,
-        position.provider,
-        position.nftId || '',
-      ];
-      dispatch(setToken(zapAssetTuple as any));
-    },
-    [dispatch, sourceChain],
   );
 
   // Handlers for destination asset picker
@@ -371,42 +278,10 @@ function Zap(props: ZapProps) {
   );
 
   const handleDestZapAssetChange = useCallback(
-    (value: Token) => {
-      // Convert Token to ZapAssetTuple for tokens
-      const zapAssetTuple = [value.chain, value.address, ZapAssetType.TOKEN];
-      dispatch(setDestToken(zapAssetTuple as any));
+    (value: ZapAsset) => {
+      dispatch(setDestToken(value.tuple));
     },
     [dispatch],
-  );
-
-  // Handlers for destination pool and position selection
-  const handleDestPoolSelect = useCallback(
-    (pool: any) => {
-      // Convert pool to ZapAssetTuple
-      const zapAssetTuple = [
-        destChain!,
-        pool.address,
-        ZapAssetType.POOL,
-        pool.provider,
-      ];
-      dispatch(setDestToken(zapAssetTuple as any));
-    },
-    [dispatch, destChain],
-  );
-
-  const handleDestPositionSelect = useCallback(
-    (position: any) => {
-      // Convert position to ZapAssetTuple
-      const zapAssetTuple = [
-        destChain!,
-        position.address,
-        ZapAssetType.POSITION,
-        position.provider,
-        position.nftId || '',
-      ];
-      dispatch(setDestToken(zapAssetTuple as any));
-    },
-    [dispatch, destChain],
   );
 
   const destQuoteResult = quote?.success ? quote : undefined;
@@ -570,8 +445,6 @@ function Zap(props: ZapProps) {
     isFetchingQuotes,
   ]);
 
-  console.log('sourceToken', sourceToken);
-  console.log('destToken', destToken);
   const bridgeContent = (
     <>
       <Stack sx={{ gap: '4px', position: 'relative' }}>
@@ -580,12 +453,10 @@ function Zap(props: ZapProps) {
           <AssetPicker
             chain={sourceChain}
             chainList={supportedSourceChains}
-            token={sourceToken as any}
+            token={sourceToken}
             tokenList={sourceTokens}
             setChain={handleSourceChainChange}
             setToken={handleSourceZapAssetChange}
-            onPoolSelect={handleSourcePoolSelect}
-            onPositionSelect={handleSourcePositionSelect}
             wallet={sendingWallet}
             isSameChainSwap={isSameChainSwap}
             isSource={true}
@@ -604,15 +475,13 @@ function Zap(props: ZapProps) {
         <AssetPicker
           chain={destChain}
           chainList={supportedDestChains}
-          token={destToken as any}
-          sourceToken={sourceToken as any}
+          token={destToken}
+          sourceToken={sourceToken}
           tokenList={undefined}
           isFetchingQuotes={isFetchingQuotes}
           isFetchingTokens={false}
           setChain={handleDestChainChange}
           setToken={handleDestZapAssetChange}
-          onPoolSelect={handleDestPoolSelect}
-          onPositionSelect={handleDestPositionSelect}
           wallet={receivingWallet}
           isSameChainSwap={isSameChainSwap}
           isSource={false}

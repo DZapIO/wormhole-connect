@@ -1,22 +1,22 @@
-import React, { useMemo, useState } from 'react';
 import { Box, Card, CardContent, Skeleton, useTheme } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import ListItemButton from '@mui/material/ListItemButton';
 import Typography from '@mui/material/Typography';
+import React, { useMemo, useState } from 'react';
 
 import type { ChainConfig } from 'config/types';
-import type { ZapPool } from 'config/zapAsset';
+import type { ZapAsset } from 'config/zapAsset';
+import { usePoolList } from 'hooks/zap/usePoolList';
 import type { WalletData } from 'store/wallet';
+import { getChainId } from 'utils/chainMapping';
 import SearchableList from 'views/v3/Bridge/AssetPicker/SearchableList';
 import PoolItem from './PoolItem';
-import { usePoolList } from 'hooks/usePoolList';
-import { getChainId } from 'utils/chainMapping';
 
 type Props = {
   selectedChainConfig: ChainConfig;
-  selectedPool?: ZapPool;
+  selectedPool?: ZapAsset;
   wallet: WalletData;
-  onSelectPool: (pool: ZapPool) => void;
+  onSelectPool: (pool: ZapAsset) => void;
   provider?: string;
   isConnectingWallet?: boolean;
 };
@@ -37,7 +37,6 @@ const PoolList = (props: Props) => {
   });
 
   const sortedPools = pools;
-  console.log('pools', { sortedPools });
 
   const emptyMessage = useMemo(() => {
     let message = '';
@@ -105,7 +104,7 @@ const PoolList = (props: Props) => {
   const shouldShowEmptyMessage = listState === 'empty';
 
   const searchList = (
-    <SearchableList<ZapPool>
+    <SearchableList<ZapAsset>
       searchPlaceholder={placeholder}
       sx={styles.poolList}
       dataTestId="pool-search-list"
@@ -153,10 +152,10 @@ const PoolList = (props: Props) => {
 
         return false;
       }}
-      renderFn={(pool: ZapPool) => {
+      renderFn={(pool: ZapAsset) => {
         return (
           <PoolItem
-            key={pool.address || pool.symbol}
+            key={pool.address.toString()}
             pool={pool}
             chain={props.selectedChainConfig.sdkName}
             onClick={() => {

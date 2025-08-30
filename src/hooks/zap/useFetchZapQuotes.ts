@@ -125,9 +125,9 @@ const useFetchZapQuotes = (params: ZapQuoteParams): HookReturn => {
         }
 
         const zapQuoteRequest: ZapQuoteRequest = {
-          srcToken: (params.sourceToken?.address as HexString) ?? '',
+          srcToken: (params.sourceToken?.addressString as HexString) ?? '',
           srcChainId,
-          destToken: (params.destToken?.address as HexString) ?? '',
+          destToken: (params.destToken?.addressString as HexString) ?? '',
           destChainId,
           recipient: params.recipient as HexString,
           refundee:
@@ -211,11 +211,6 @@ const useFetchZapQuotes = (params: ZapQuoteParams): HookReturn => {
     if (refreshTimeout.current) {
       clearTimeout(refreshTimeout.current);
     }
-
-    console.debug(
-      `Waiting ${timeTilNextFetch / 1000}s until next zap quote fetch`,
-      params,
-    );
 
     refreshTimeout.current = setTimeout(
       () => setNonce(Date.now()),

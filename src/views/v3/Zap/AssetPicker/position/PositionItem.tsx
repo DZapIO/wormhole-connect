@@ -1,12 +1,12 @@
-import React from 'react';
 import { Box, ListItemButton, Typography, useTheme } from '@mui/material';
 import type { Chain } from '@wormhole-foundation/sdk';
-import type { ZapPosition } from 'config/zapAsset';
-import PoolIcon from '../pool/PoolIcon';
+import type { ZapAsset } from 'config/zapAsset';
+import React from 'react';
 import { displayAddress } from 'utils';
+import PoolIcon from '../pool/PoolIcon';
 
 interface Props {
-  position: ZapPosition;
+  position: ZapAsset;
   chain: Chain;
   onClick: () => void;
   isSelected: boolean;
@@ -75,7 +75,7 @@ const PositionItem = ({ position, chain, onClick, isSelected }: Props) => {
     <ListItemButton sx={styles.container} onClick={onClick} dense>
       <Box sx={styles.positionInfo}>
         <PoolIcon
-          underlyingAssets={position.underlyingAssets}
+          underlyingAssets={position.zapTokenInfo?.underlyingAssets}
           fallbackSymbol={position.name?.charAt(0) || 'P'}
           size={36}
         />
@@ -83,19 +83,19 @@ const PositionItem = ({ position, chain, onClick, isSelected }: Props) => {
         <Box sx={styles.positionDetails}>
           <Typography sx={styles.positionName}>{position.name}</Typography>
           <Typography sx={styles.positionSymbol}>
-            {displayAddress(chain, position.address)}
+            {displayAddress(chain, position.address?.toString())}
           </Typography>
         </Box>
 
         <Box sx={styles.positionStats}>
-          {position.amountUSD && (
+          {position.zapPositionDetails?.amountUSD && (
             <Typography sx={styles.amountUsd}>
-              ${Number(position.amountUSD).toLocaleString()}
+              ${Number(position.zapPositionDetails?.amountUSD).toLocaleString()}
             </Typography>
           )}
-          {position.apr && (
+          {position.zapTokenInfo?.apr && (
             <Typography sx={styles.apy}>
-              {Number(position.apr).toFixed(2)}% APY
+              {Number(position.zapTokenInfo?.apr).toFixed(2)}% APY
             </Typography>
           )}
         </Box>

@@ -1,7 +1,10 @@
 import { useMemo } from 'react';
 import type { amount, Chain } from '@wormhole-foundation/sdk';
-import useFetchZapQuotes from 'hooks/useFetchZapQuotes';
-import type { ZapQuoteParams, ZapQuoteResult } from 'hooks/useFetchZapQuotes';
+import useFetchZapQuotes from 'hooks/zap/useFetchZapQuotes';
+import type {
+  ZapQuoteParams,
+  ZapQuoteResult,
+} from 'hooks/zap/useFetchZapQuotes';
 import type { ZapAsset } from 'config/zapAsset';
 import type { WalletData } from 'store/wallet';
 import type { Token } from 'config/tokens';
@@ -48,7 +51,7 @@ export const useZapQuotes = ({
     () => ({
       amount,
       sourceChain: fromChain,
-      sourceToken,
+      sourceToken: sourceToken,
       destChain: toChain,
       destToken,
       slippage,
@@ -76,8 +79,6 @@ export const useZapQuotes = ({
 
   const { quote, isFetchingInitialQuotes: isFetching } =
     useFetchZapQuotes(quoteParams);
-
-  console.log({ quote, isFetching });
 
   return {
     quote,

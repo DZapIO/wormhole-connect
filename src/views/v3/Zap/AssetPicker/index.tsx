@@ -1,46 +1,46 @@
-import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { Box, TextField, Tooltip, useMediaQuery } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import { usePopupState, bindTrigger } from 'material-ui-popup-state/hooks';
+import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import type { Chain } from '@wormhole-foundation/sdk';
 import { amount as sdkAmount } from '@wormhole-foundation/sdk';
+import { bindTrigger, usePopupState } from 'material-ui-popup-state/hooks';
+import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 
+import Color from 'color';
+import AssetBadge from 'components/AssetBadge';
 import config from 'config';
 import type { ChainConfig } from 'config/types';
+import { type ZapAsset } from 'config/zapAsset';
+import { useTokens } from 'contexts/TokensContext';
+import type { AmountValidationResult } from 'hooks/useAmountValidation';
+import type { ZapQuoteResult } from 'hooks/zap/useFetchZapQuotes';
+import { useTokenList } from 'hooks/useTokenList';
 import type { RootState } from 'store';
 import type { WalletData } from 'store/wallet';
 import { isDisabledChain, setAmount } from 'store/zap';
-import type { Balances } from 'utils/wallet/types';
-import AssetBadge from 'components/AssetBadge';
-import type { Token } from 'config/tokens';
-import { useTokens } from 'contexts/TokensContext';
-import { useTokenList } from 'hooks/useTokenList';
-import { TransferWallet } from 'utils/wallet';
-import WalletController from 'views/v3/Bridge/WalletConnector/Controller';
-import type { AmountValidationResult } from 'hooks/useAmountValidation';
-import { OPACITY } from 'utils/style';
-import Color from 'color';
-import AssetPickerDrawer from 'views/v3/Zap/AssetPicker/PickerBottomSheet';
-import AssetPickerPopover from 'views/v3/Zap/AssetPicker/PickerModal';
 import { calculateUSDPrice } from 'utils';
 import { formatWithCommas } from 'utils/formatNumber';
+import { OPACITY } from 'utils/style';
+import { TransferWallet } from 'utils/wallet';
+import type { Balances } from 'utils/wallet/types';
+import WalletController from 'views/v3/Bridge/WalletConnector/Controller';
 import AmountInput from 'views/v3/Zap/AmountInput';
-import type { ZapQuoteResult } from 'hooks/useFetchZapQuotes';
+import AssetPickerDrawer from 'views/v3/Zap/AssetPicker/PickerBottomSheet';
+import AssetPickerPopover from 'views/v3/Zap/AssetPicker/PickerModal';
 
 type Props = {
   chain?: Chain | undefined;
   chainList: Array<ChainConfig>;
-  token?: Token;
-  sourceToken?: Token;
-  tokenList?: Array<Token> | undefined;
+  token?: ZapAsset;
+  sourceToken?: ZapAsset;
+  tokenList?: Array<ZapAsset> | undefined;
   isFetchingQuotes?: boolean;
   isFetchingTokens?: boolean;
-  setToken: (value: Token) => void;
+  setToken: (value: ZapAsset) => void;
   setChain: (value: Chain) => void;
   wallet: WalletData;
   isSameChainSwap: boolean;
@@ -53,8 +53,6 @@ type Props = {
   amountValidation?: AmountValidationResult;
   quote?: ZapQuoteResult | undefined;
   anchorEl: HTMLElement | null;
-  onPoolSelect: (pool: any) => void;
-  onPositionSelect: (position: any) => void;
 };
 
 function AssetPicker(props: Props) {
@@ -98,6 +96,13 @@ function AssetPicker(props: Props) {
   });
 
   const tokenBalance = useMemo(() => {
+    if (props.token?.zapPositionDetails) {
+      const res = sdkAmount.fromBaseUnits(
+        BigInt(props.token?.zapPositionDetails?.amount ?? '0'),
+        props.token.decimals,
+      );
+      return res;
+    }
     if (props.isSource && props.balances && props.token) {
       return props.balances[props.token.key]?.balance;
     }
@@ -256,20 +261,35 @@ function AssetPicker(props: Props) {
   );
 
   // If the amount input is empty, we don't need to check the quote which may be for the previous amount
-  const receiveAmount =
-    !amount || amount.amount === '' || amount.amount === '0'
-      ? 0
-      : props.quote?.success && props.quote.amountOut
-      ? parseFloat(props.quote.amountOut)
-      : undefined;
+  // const receiveAmount =
+  //   !amount || amount.amount === '' || amount.amount === '0'
+  //     ? 0
+  //     : props.quote?.success && props.quote.amountOut
+  //     ? parseFloat(props.quote.amountOut)
+  //     : undefined;
 
-  const receiveAmountText = receiveAmount ? receiveAmount.toString() : '';
+  const receiveAmount =
+    !props.isSource &&
+    props.quote?.success &&
+    props.quote.amountOut &&
+    props.token
+      ? sdkAmount.display(
+          sdkAmount.fromBaseUnits(
+            BigInt(props.quote.amountOut ?? '0'),
+            props.token.decimals,
+          ),
+          props.token.decimals,
+        )
+      : '';
 
   const tokenPrice = useMemo(() => {
     const tokenAmount = props.isSource
       ? amount
       : props.quote?.success && props.quote.amountOut && props.token
-      ? sdkAmount.parse(props.quote.amountOut, props.token.decimals)
+      ? sdkAmount.fromBaseUnits(
+          BigInt(props.quote.amountOut ?? '0'),
+          props.token.decimals,
+        )
       : undefined;
     if (props.token && tokenAmount) {
       return calculateUSDPrice(getTokenPrice, tokenAmount, props.token);
@@ -300,7 +320,6 @@ function AssetPicker(props: Props) {
     (newValue: string): void => {
       dispatch(setAmount(newValue));
       setDebouncedAmountInput(newValue);
-      console.log('newValue', newValue);
     },
     [dispatch, amount, props.chain, props.token, zapToken, fromChain],
   );
@@ -314,7 +333,7 @@ function AssetPicker(props: Props) {
   );
 
   const handleTokenSelect = useCallback(
-    (token: Token) => {
+    (token: ZapAsset) => {
       if (props.isSource && props.token?.key !== token.key) {
         // Reset amount when source token is changed
         handleAmountChange('');
@@ -329,25 +348,6 @@ function AssetPicker(props: Props) {
     setSelectedProvider(providerId);
     setSearchQuery('');
   }, []);
-
-  const handlePoolSelect = useCallback(
-    (pool: any) => {
-      props.onPoolSelect(pool);
-    },
-    [props],
-  );
-
-  const handlePositionSelect = useCallback(
-    (position: any) => {
-      if (props.isSource) {
-        // Reset amount when source asset is changed
-        handleAmountChange('');
-        handleDebouncedAmountChange('');
-      }
-      props.onPositionSelect(position);
-    },
-    [props, handleAmountChange, handleDebouncedAmountChange],
-  );
 
   // Clear the amount input value if the amount is reset outside of this component
   // This can happen if user swaps selected source and destination assets.
@@ -495,11 +495,9 @@ function AssetPicker(props: Props) {
             <AmountInput
               value={amountInput}
               debouncedValue={debouncedAmountInput}
-              receiveAmount={receiveAmount}
+              receiveAmount={Number(receiveAmount)}
               supportedSourceTokens={props.tokenList || []}
-              tokenBalance={
-                props.token ? props.balances[props.token.key]?.balance : null
-              }
+              tokenBalance={tokenBalance}
               warning={props.amountValidation?.warning}
               error={props.amountValidation?.error}
               onChange={handleAmountChange}
@@ -526,9 +524,9 @@ function AssetPicker(props: Props) {
                     style: {
                       // Shrink the font size based on the length of the input value
                       fontSize:
-                        receiveAmountText.length > 12
+                        receiveAmount.length > 12
                           ? '20px'
-                          : receiveAmountText.length > 6
+                          : receiveAmount.length > 6
                           ? '28px'
                           : '36px',
                       height: '36px',
@@ -540,7 +538,7 @@ function AssetPicker(props: Props) {
                   },
                 }}
                 variant="standard"
-                value={formatWithCommas(receiveAmountText)}
+                value={formatWithCommas(receiveAmount)}
               />
             </Box>
           )}
@@ -592,16 +590,8 @@ function AssetPicker(props: Props) {
           setSearchQuery={setSearchQuery}
           onChainSelect={handleChainSelect}
           onProviderSelect={handleProviderSelect}
-          onTokenSelect={(token: Token) => {
+          onTokenSelect={(token: ZapAsset) => {
             handleTokenSelect(token);
-            setIsDrawerOpen(false);
-          }}
-          onPoolSelect={(pool: any) => {
-            handlePoolSelect(pool);
-            setIsDrawerOpen(false);
-          }}
-          onPositionSelect={(position: any) => {
-            handlePositionSelect(position);
             setIsDrawerOpen(false);
           }}
         />
@@ -630,16 +620,8 @@ function AssetPicker(props: Props) {
           setSearchQuery={setSearchQuery}
           onChainSelect={handleChainSelect}
           onProviderSelect={handleProviderSelect}
-          onTokenSelect={(token: Token) => {
+          onTokenSelect={(token: ZapAsset) => {
             handleTokenSelect(token);
-            popupState.close();
-          }}
-          onPoolSelect={(pool: any) => {
-            handlePoolSelect(pool);
-            popupState.close();
-          }}
-          onPositionSelect={(position: any) => {
-            handlePositionSelect(position);
             popupState.close();
           }}
         />

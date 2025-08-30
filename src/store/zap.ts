@@ -3,7 +3,12 @@ import { createSlice } from '@reduxjs/toolkit';
 import type { Chain } from '@wormhole-foundation/sdk';
 import { amount } from '@wormhole-foundation/sdk';
 import config from 'config';
-import type { ZapAssetTuple, ZapChains, ZapProviders } from 'config/zapAsset';
+import type { Token, TokenTuple } from 'config/tokens';
+import {
+  isZapPoolOrPositionTuple,
+  type ZapChains,
+  type ZapProviders,
+} from 'config/zapAsset';
 import { TransferWallet, walletAcceptedChains } from 'utils/wallet';
 import type { DataWrapper } from './helpers';
 import {
@@ -33,8 +38,8 @@ export interface ZapInputState {
   validations: ZapValidations;
   fromChain: Chain | undefined;
   toChain: Chain | undefined;
-  token: ZapAssetTuple | undefined;
-  destToken: ZapAssetTuple | undefined;
+  token: TokenTuple | undefined;
+  destToken: TokenTuple | undefined;
   amount?: amount.Amount;
   receiveAmount: DataWrapper<string>;
   route?: string;
@@ -52,17 +57,7 @@ export interface ZapInputState {
 
 // This is a function because config might have changed since we last cleared this store
 function getInitialState(): ZapInputState {
-  const { fromChain, toChain, fromToken, toToken } =
-    config.ui.defaultInputs || {};
-
-  const fromZapAssetTuple =
-    fromChain && fromToken
-      ? config.zapAssets.findByAddressOrSymbol(fromChain, fromToken)?.tuple
-      : undefined;
-  const toZapAssetTuple =
-    toChain && toToken
-      ? config.zapAssets.findByAddressOrSymbol(toChain, toToken)?.tuple
-      : undefined;
+  const { fromChain, toChain } = config.ui.defaultInputs || {};
 
   return {
     showValidationState: false,
@@ -78,8 +73,8 @@ function getInitialState(): ZapInputState {
     },
     fromChain,
     toChain,
-    token: fromZapAssetTuple,
-    destToken: toZapAssetTuple,
+    token: undefined,
+    destToken: undefined,
     amount: undefined,
     receiveAmount: getEmptyDataWrapper(),
     route: undefined,
@@ -159,7 +154,7 @@ export const zapInputSlice = createSlice({
     // user input
     setToken: (
       state: ZapInputState,
-      { payload }: PayloadAction<ZapAssetTuple>,
+      { payload }: PayloadAction<TokenTuple>,
     ) => {
       state.token = payload;
     },
@@ -168,7 +163,7 @@ export const zapInputSlice = createSlice({
     },
     setDestToken: (
       state: ZapInputState,
-      { payload }: PayloadAction<ZapAssetTuple>,
+      { payload }: PayloadAction<TokenTuple>,
     ) => {
       state.destToken = payload;
     },
@@ -184,8 +179,13 @@ export const zapInputSlice = createSlice({
       performModificationsIfToChainChanged(state);
     },
     setAmount: (state: ZapInputState, { payload }: PayloadAction<string>) => {
+      let token: Token | undefined = undefined;
       if (state.token && state.fromChain) {
-        const token = config.zapAssets.get(state.token);
+        if (isZapPoolOrPositionTuple(state.token)) {
+          token = config.zapAssets.get(state.token);
+        } else {
+          token = config.tokens.get(state.token);
+        }
         if (token) {
           const { decimals } = token;
           const parsed = amount.parse(payload, decimals);

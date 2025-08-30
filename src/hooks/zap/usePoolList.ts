@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import type { ZapPool } from 'config/zapAsset';
+import type { ZapAsset } from 'config/zapAsset';
 import { useZap } from 'contexts/ZapContext';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface UsePoolListParams {
   chainId?: number;
@@ -15,12 +15,12 @@ export const usePoolList = ({
   searchQuery,
   limit = 100,
 }: UsePoolListParams = {}): {
-  pools: ZapPool[];
+  pools: ZapAsset[];
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
 } => {
-  const [pools, setPools] = useState<ZapPool[]>([]);
+  const [pools, setPools] = useState<ZapAsset[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   // Use centralized cache-first method from ZapContext
@@ -34,6 +34,10 @@ export const usePoolList = ({
     }
 
     try {
+      if (!provider) {
+        setPools([]);
+        return;
+      }
       setError(null);
       // Use cache-first method from context (like bridge uses getOrFetchToken)
       const fetchedPools = await getOrFetchPools(chainId, provider, limit);
@@ -68,7 +72,7 @@ export const usePoolList = ({
       const searchFields = [
         pool.symbol?.toLowerCase(),
         pool.name?.toLowerCase(),
-        pool.address?.toLowerCase(),
+        pool.address?.toString().toLowerCase(),
       ].filter(Boolean);
 
       return searchFields.some((field) => field?.includes(query));

@@ -1,12 +1,12 @@
-import React from 'react';
 import { Box, ListItemButton, Typography, useTheme } from '@mui/material';
 import type { Chain } from '@wormhole-foundation/sdk';
-import type { ZapPool } from 'config/zapAsset';
-import PoolIcon from './PoolIcon';
+import React from 'react';
 import { displayAddress } from 'utils';
+import PoolIcon from './PoolIcon';
+import type { ZapAsset } from 'config/zapAsset';
 
 interface Props {
-  pool: ZapPool;
+  pool: ZapAsset;
   chain: Chain;
   onClick: () => void;
   isSelected: boolean;
@@ -76,7 +76,7 @@ const PoolItem = ({ pool, chain, onClick, isSelected }: Props) => {
     <ListItemButton sx={styles.container} onClick={onClick} dense>
       <Box sx={styles.poolInfo}>
         <PoolIcon
-          underlyingAssets={pool.underlyingAssets}
+          underlyingAssets={pool.zapTokenInfo?.underlyingAssets}
           fallbackSymbol={pool.symbol || 'P'}
           size={36}
         />
@@ -84,19 +84,19 @@ const PoolItem = ({ pool, chain, onClick, isSelected }: Props) => {
         <Box sx={styles.poolDetails}>
           <Typography sx={styles.poolName}>{pool.name}</Typography>
           <Typography sx={styles.poolSymbol}>
-            {displayAddress(chain, pool.address)}
+            {displayAddress(chain, pool.address.toString())}
           </Typography>
         </Box>
 
         <Box sx={styles.poolStats}>
-          {pool.tvl && (
+          {pool.zapTokenInfo?.tvl && (
             <Typography sx={styles.tvl}>
-              TVL: ${Number(pool.tvl).toLocaleString()}
+              TVL: ${Number(pool.zapTokenInfo?.tvl).toLocaleString()}
             </Typography>
           )}
-          {pool.apr && (
+          {pool.zapTokenInfo?.apr && (
             <Typography sx={styles.apy}>
-              {Number(pool.apr).toFixed(2)}% APY
+              {Number(pool.zapTokenInfo?.apr).toFixed(2)}% APY
             </Typography>
           )}
         </Box>

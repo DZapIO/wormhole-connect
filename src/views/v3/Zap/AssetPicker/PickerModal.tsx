@@ -1,20 +1,19 @@
-import React, { memo, useState } from 'react';
-import { useTheme, Tabs, Tab, Box } from '@mui/material';
+import { Box, Tab, Tabs, useTheme } from '@mui/material';
 import Popover from '@mui/material/Popover';
-import { bindPopover } from 'material-ui-popup-state/hooks';
-import type { PopupState } from 'material-ui-popup-state/hooks';
 import { type Chain } from '@wormhole-foundation/sdk';
+import type { PopupState } from 'material-ui-popup-state/hooks';
+import { bindPopover } from 'material-ui-popup-state/hooks';
+import React, { memo, useState } from 'react';
 
+import type { Token } from 'config/tokens';
 import type { ChainConfig } from 'config/types';
 import type { WalletData } from 'store/wallet';
-import type { Token } from 'config/tokens';
 import type { Balances } from 'utils/wallet/types';
 import ChainList from 'views/v3/Zap/AssetPicker/ChainList';
-import TokenList from 'views/v3/Zap/AssetPicker/token/TokenList';
 import PoolList from 'views/v3/Zap/AssetPicker/pool/PoolList';
 import PositionList from 'views/v3/Zap/AssetPicker/position/PositionList';
+import TokenList from 'views/v3/Zap/AssetPicker/token/TokenList';
 import ProtocolList from './ProtocolList';
-import type { ZapPool, ZapPosition } from 'config/zapAsset';
 
 interface AssetPickerPopoverProps {
   popupState: PopupState;
@@ -41,8 +40,6 @@ interface AssetPickerPopoverProps {
   onChainSelect: (value: Chain) => void;
   onProviderSelect: (providerId: string) => void;
   onTokenSelect: (value: Token) => void;
-  onPoolSelect?: (pool: ZapPool) => void;
-  onPositionSelect?: (position: ZapPosition) => void;
 }
 
 function AssetPickerPopover({
@@ -70,8 +67,6 @@ function AssetPickerPopover({
   onChainSelect,
   onProviderSelect,
   onTokenSelect,
-  onPoolSelect,
-  onPositionSelect,
 }: AssetPickerPopoverProps) {
   const theme = useTheme();
   const [activeTab, setActiveTab] = useState(0);
@@ -178,12 +173,12 @@ function AssetPickerPopover({
                 {selectedProvider && chainConfig && !showProviderSearch && (
                   <Box sx={{ mt: 2 }}>
                     {/* Show pools for general browsing */}
-                    {onPoolSelect && !isSource && (
+                    {!isSource && (
                       <Box sx={{ mb: 2 }}>
                         <PoolList
                           selectedChainConfig={chainConfig}
                           wallet={wallet}
-                          onSelectPool={onPoolSelect}
+                          onSelectPool={onTokenSelect}
                           provider={selectedProvider}
                           isConnectingWallet={isConnectingWallet}
                         />
@@ -191,12 +186,12 @@ function AssetPickerPopover({
                     )}
 
                     {/* Show positions only for connected wallet when isSource is true */}
-                    {onPositionSelect && wallet?.address && isSource && (
+                    {wallet?.address && isSource && (
                       <Box sx={{ mt: 2 }}>
                         <PositionList
                           selectedChainConfig={chainConfig}
                           wallet={wallet}
-                          onSelectPosition={onPositionSelect}
+                          onSelectPosition={onTokenSelect}
                           provider={selectedProvider}
                           isConnectingWallet={isConnectingWallet}
                         />

@@ -1,20 +1,19 @@
-import React, { memo, useState } from 'react';
-import { useTheme, Tabs, Tab } from '@mui/material';
+import { Tab, Tabs, useTheme } from '@mui/material';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import SwipeableDrawer from '@mui/material/SwipeableDrawer';
 import { type Chain } from '@wormhole-foundation/sdk';
+import React, { memo, useState } from 'react';
 
+import type { Token } from 'config/tokens';
 import type { ChainConfig } from 'config/types';
 import type { WalletData } from 'store/wallet';
-import type { Token } from 'config/tokens';
 import type { Balances } from 'utils/wallet/types';
 import ChainList from 'views/v3/Zap/AssetPicker/ChainList';
-import TokenList from 'views/v3/Zap/AssetPicker/token/TokenList';
 import PoolList from 'views/v3/Zap/AssetPicker/pool/PoolList';
 import PositionList from 'views/v3/Zap/AssetPicker/position/PositionList';
+import TokenList from 'views/v3/Zap/AssetPicker/token/TokenList';
 import ProtocolList from './ProtocolList';
-import type { ZapPool, ZapPosition } from 'config/zapAsset';
 
 interface AssetPickerDrawerProps {
   isDrawerOpen: boolean;
@@ -41,8 +40,6 @@ interface AssetPickerDrawerProps {
   onChainSelect: (value: Chain) => void;
   onProviderSelect: (providerId: string) => void;
   onTokenSelect: (value: Token) => void;
-  onPoolSelect?: (pool: ZapPool) => void;
-  onPositionSelect?: (position: ZapPosition) => void;
 }
 
 function AssetPickerDrawer({
@@ -70,23 +67,11 @@ function AssetPickerDrawer({
   onChainSelect,
   onProviderSelect,
   onTokenSelect,
-  onPoolSelect,
-  onPositionSelect,
 }: AssetPickerDrawerProps) {
   const theme = useTheme();
   const [activeTab, setActiveTab] = useState(0);
 
   // Debug logging
-  console.log('PickerBottomSheet Debug:', {
-    activeTab,
-    selectedProvider,
-    chainConfig: chainConfig?.displayName,
-    onPoolSelect: !!onPoolSelect,
-    onPositionSelect: !!onPositionSelect,
-    walletConnected: !!wallet?.address,
-    isSource,
-    showChainSearch,
-  });
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -192,25 +177,25 @@ function AssetPickerDrawer({
                 {selectedProvider && chainConfig && !showProviderSearch && (
                   <Box sx={{ mt: 2 }}>
                     {/* Show pools for general browsing */}
-                    {onPoolSelect && (
+                    {
                       <Box sx={{ mb: 2 }}>
                         <PoolList
                           selectedChainConfig={chainConfig}
                           wallet={wallet}
-                          onSelectPool={onPoolSelect}
+                          onSelectPool={onTokenSelect}
                           provider={selectedProvider}
                           isConnectingWallet={isConnectingWallet}
                         />
                       </Box>
-                    )}
+                    }
 
                     {/* Show positions only for connected wallet when isSource is true */}
-                    {onPositionSelect && wallet?.address && isSource && (
+                    {wallet?.address && isSource && (
                       <Box sx={{ mt: 2 }}>
                         <PositionList
                           selectedChainConfig={chainConfig}
                           wallet={wallet}
-                          onSelectPosition={onPositionSelect}
+                          onSelectPosition={onTokenSelect}
                           provider={selectedProvider}
                           isConnectingWallet={isConnectingWallet}
                         />

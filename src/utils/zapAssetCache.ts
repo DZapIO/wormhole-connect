@@ -1,11 +1,13 @@
+import { UniversalAddress, type Chain } from '@wormhole-foundation/sdk';
 import config from 'config';
+import type { ZapAsset } from 'config/zapAsset';
 import {
-  ZapAsset,
+  getZapAssetFromPool,
+  getZapAssetFromPosition,
   ZapAssetType,
   type ZapPool,
   type ZapPosition,
 } from 'config/zapAsset';
-import type { Chain } from '@wormhole-foundation/sdk';
 
 /**
  * Converts a ZapPool to a ZapAsset and adds it to the cache
@@ -14,20 +16,11 @@ export function cacheZapPool(
   pool: ZapPool,
   chain: Chain,
   provider: string,
-): ZapAsset {
-  const zapAsset = new ZapAsset(
-    chain,
-    pool.address,
-    ZapAssetType.POOL,
-    18, // Default decimals for pools
-    pool.symbol || pool.name || 'Pool',
-    pool.name,
-    pool.underlyingAssets?.[0]?.logo,
-    provider,
-    undefined, // No nftId for pools
-  );
-
-  config.zapAssets.add(zapAsset);
+): ZapAsset | null {
+  const zapAsset = getZapAssetFromPool(pool);
+  if (zapAsset) {
+    config.zapAssets.add(zapAsset);
+  }
   return zapAsset;
 }
 
@@ -38,20 +31,12 @@ export function cacheZapPosition(
   position: ZapPosition,
   chain: Chain,
   provider: string,
-): ZapAsset {
-  const zapAsset = new ZapAsset(
-    chain,
-    position.address,
-    ZapAssetType.POSITION,
-    18, // Default decimals for positions
-    position.name || 'Position',
-    position.name,
-    position.underlyingAssets?.[0]?.logo ?? '',
-    provider,
-    undefined, // nftId - will be set from the API response separately
-  );
+): ZapAsset | null {
+  const zapAsset = getZapAssetFromPosition(position);
 
-  config.zapAssets.add(zapAsset);
+  if (zapAsset) {
+    config.zapAssets.add(zapAsset);
+  }
   return zapAsset;
 }
 
@@ -63,7 +48,9 @@ export function cacheZapPools(
   chain: Chain,
   provider: string,
 ): ZapAsset[] {
-  return pools.map((pool) => cacheZapPool(pool, chain, provider));
+  return pools
+    .map((pool) => cacheZapPool(pool, chain, provider))
+    .filter((zapAsset) => zapAsset !== null);
 }
 
 /**
@@ -74,9 +61,9 @@ export function cacheZapPositions(
   chain: Chain,
   provider: string,
 ): ZapAsset[] {
-  return positions.map((position) =>
-    cacheZapPosition(position, chain, provider),
-  );
+  return positions
+    .map((position) => cacheZapPosition(position, chain, provider))
+    .filter((zapAsset) => zapAsset !== null);
 }
 
 /**
@@ -87,7 +74,12 @@ export function getCachedPool(
   address: string,
   provider: string,
 ): ZapAsset | undefined {
-  return config.zapAssets.get(chain, address, ZapAssetType.POOL, provider);
+  return config.zapAssets.get({
+    chain,
+    address: new UniversalAddress(address),
+    type: ZapAssetType.POOL,
+    provider,
+  });
 }
 
 /**
@@ -99,11 +91,11 @@ export function getCachedPosition(
   provider: string,
   nftId?: string,
 ): ZapAsset | undefined {
-  return config.zapAssets.get(
+  return config.zapAssets.get({
     chain,
-    address,
-    ZapAssetType.POSITION,
+    address: new UniversalAddress(address),
+    type: ZapAssetType.POSITION,
     provider,
     nftId,
-  );
+  });
 }
