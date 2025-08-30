@@ -31,7 +31,7 @@ import RouteBadge from './RouteBadge';
 import TimeToDestination from './TimeToDestination';
 import ProviderWithAmount from './ProviderWithAmount';
 
-const HIGH_FEE_THRESHOLD = 20; // dollhairs
+const HIGH_FEE_PERCENT = 10;
 
 type Props = {
   route: string;
@@ -98,6 +98,7 @@ const SingleRoute = (props: Props) => {
   const {
     toChain: destChain,
     fromChain: sourceChain,
+    amount: inputAmount,
     isTransactionInProgress,
   } = useSelector((state: RootState) => state.transferInput);
 
@@ -114,20 +115,30 @@ const SingleRoute = (props: Props) => {
   });
 
   const isHighFee = useMemo(() => {
-    if (!quote?.relayFee) {
+    if (!quote || !sourceToken || !destToken || !inputAmount) {
+      return { isHighFee: false };
+    }
+
+    const inputUsd = calculateUSDPriceRaw(
+      getTokenPrice,
+      amount.whole(quote.sourceToken.amount),
+      sourceToken,
+    );
+    const outputAmount = amount.whole(quote.destinationToken.amount);
+    const outputUsd = calculateUSDPriceRaw(
+      getTokenPrice,
+      outputAmount,
+      destToken,
+    );
+
+    if (inputUsd === undefined || outputUsd === undefined || inputUsd <= 0) {
       return false;
     }
 
-    const relayFee = amount.whole(quote.relayFee.amount);
-    const feeToken = config.tokens.get(quote.relayFee.token);
-    const feePrice = calculateUSDPriceRaw(getTokenPrice, relayFee, feeToken);
-
-    if (feePrice === undefined) {
-      return false;
-    }
-
-    return feePrice > HIGH_FEE_THRESHOLD;
-  }, [getTokenPrice, quote?.relayFee]);
+    const delta = Math.max(0, inputUsd - outputUsd);
+    const percent = (delta / inputUsd) * 100;
+    return percent >= HIGH_FEE_PERCENT;
+  }, [getTokenPrice, quote, sourceToken, destToken, inputAmount]);
 
   const destinationGas = useMemo(() => {
     if (
@@ -309,14 +320,14 @@ const SingleRoute = (props: Props) => {
                 fontSize={14}
                 lineHeight="18px"
               >
-                Output amount is much lower than input amount.
+                {`Price impact is greater than ${HIGH_FEE_PERCENT}%`}
               </Typography>
               <Typography
                 color={theme.palette.text.secondary}
                 fontSize={14}
                 lineHeight="18px"
               >
-                Double check before proceeding.
+                Please check before proceeding.
               </Typography>
             </Stack>
           </Stack>

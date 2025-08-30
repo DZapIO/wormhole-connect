@@ -73,6 +73,7 @@ import {
 } from '@wormhole-foundation/sdk-sui';
 import axios from 'axios';
 import { createTransactionRequest, getEvmContractAddress } from './evm/utils';
+import { getAllTokenIdsForChain } from '../../utils/tokenHelpers';
 import {
   getNativeContractAddress,
   getTransactionStatus,
@@ -169,13 +170,6 @@ class MayanRouteBase<N extends Network> extends routes.AutomaticRoute<
     return supportedChains(network);
   }
 
-  // Mayan can handle any input and output token that has liquidity on a DeX
-  static async supportedSourceTokens(
-    _fromChain: ChainContext<Network>,
-  ): Promise<TokenId[]> {
-    return [];
-  }
-
   static isProtocolSupported<N extends Network>(
     chain: ChainContext<N>,
   ): boolean {
@@ -186,9 +180,10 @@ class MayanRouteBase<N extends Network> extends routes.AutomaticRoute<
   static async supportedDestinationTokens<N extends Network>(
     _token: TokenId,
     _fromChain: ChainContext<N>,
-    _toChain: ChainContext<N>,
+    toChain: ChainContext<N>,
   ): Promise<TokenId[]> {
-    return [];
+    // TODO update this function to only allow HyperCore/USDC
+    return getAllTokenIdsForChain(toChain.chain);
   }
 
   async isAvailable(): Promise<boolean> {

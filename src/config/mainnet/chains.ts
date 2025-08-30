@@ -209,4 +209,12 @@ export const MAINNET_CHAINS: ChainsConfig = {
     icon: 'HyperEVM',
     symbol: 'HYPE',
   },
+  XRPLEVM: {
+    displayName: 'XRPL EVM',
+    sdkName: 'XRPLEVM',
+    explorerUrl: 'https://explorer.xrplevm.org/',
+    explorerName: 'XRPL EVM Explorer',
+    icon: 'XRPLEVM',
+    symbol: 'XRP',
+  },
 };
