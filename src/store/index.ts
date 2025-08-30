@@ -5,6 +5,7 @@ import relayReducer from './relay';
 import routerReducer from './router';
 import walletReducer from './wallet';
 import searchReducer from './search';
+import zapInputReducer from './zap';
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     wallet: walletReducer,
     relay: relayReducer,
     search: searchReducer,
+    zapInput: zapInputReducer,
   },
 });
 

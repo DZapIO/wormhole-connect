@@ -29,6 +29,7 @@ import RouteOperator from 'routes/operator';
 import { CHAIN_ORDER } from './constants';
 import { createUiConfig } from './ui';
 import { buildTokenCache } from './tokens';
+import { buildZapAssetCache } from './zapAsset';
 
 export function buildConfig(
   customConfig: WormholeConnectConfig = {},
@@ -68,6 +69,15 @@ export function buildConfig(
     ],
     wrappedTokens,
     cacheKey(`token-cache:${network}`),
+  );
+
+  const zapAssets = buildZapAssetCache(
+    [
+      // For now, we start with an empty array and will add zap assets as needed
+      // TODO: Add proper zap asset configuration
+    ],
+    wrappedTokens,
+    cacheKey(`zap-asset-cache:${network}`),
   );
 
   const sdkConfig = LEGACY_CONFIG[network.toUpperCase()];
@@ -150,6 +160,7 @@ export function buildConfig(
       }),
     tokens,
     tokenWhitelist: customConfig.tokens,
+    zapAssets,
 
     routes: new RouteOperator(customConfig.routes),
 
