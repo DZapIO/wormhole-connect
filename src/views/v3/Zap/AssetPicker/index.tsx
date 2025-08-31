@@ -14,7 +14,7 @@ import Color from 'color';
 import AssetBadge from 'components/AssetBadge';
 import config from 'config';
 import type { ChainConfig } from 'config/types';
-import { type ZapAsset } from 'config/zapAsset';
+import { ZapAssetType, type ZapAsset } from 'config/zapAsset';
 import { useTokens } from 'contexts/TokensContext';
 import type { AmountValidationResult } from 'hooks/useAmountValidation';
 import type { ZapQuoteResult } from 'hooks/zap/useFetchZapQuotes';
@@ -31,6 +31,7 @@ import WalletController from 'views/v3/Bridge/WalletConnector/Controller';
 import AmountInput from 'views/v3/Zap/AmountInput';
 import AssetPickerDrawer from 'views/v3/Zap/AssetPicker/PickerBottomSheet';
 import AssetPickerPopover from 'views/v3/Zap/AssetPicker/PickerModal';
+import { getDefaultProvider, getZapPoolAmountUSD } from 'utils/zap';
 
 type Props = {
   chain?: Chain | undefined;
@@ -63,12 +64,19 @@ function AssetPicker(props: Props) {
     amount,
     token: zapToken,
     fromChain,
+    zappingChains,
   } = useSelector((state: RootState) => state.zapInput);
   const { getTokenPrice } = useTokens();
 
+  const chainConfig: ChainConfig | undefined = useMemo(() => {
+    return props.chain ? config.chains[props.chain] : undefined;
+  }, [props.chain]);
+
   const [showChainSearch, setShowChainSearch] = useState(false);
   const [showProviderSearch, setShowProviderSearch] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState<string>();
+  const [selectedProvider, setSelectedProvider] = useState<
+    string | undefined
+  >();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [amountInput, setAmountInput] = useState(
@@ -162,9 +170,12 @@ function AssetPicker(props: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mobile, isDrawerOpen, popupState.isOpen]);
 
-  const chainConfig: ChainConfig | undefined = useMemo(() => {
-    return props.chain ? config.chains[props.chain] : undefined;
-  }, [props.chain]);
+  // Update selected provider when chain changes
+  useEffect(() => {
+    setSelectedProvider((prev) =>
+      getDefaultProvider(zappingChains, chainConfig, prev),
+    );
+  }, [chainConfig, zappingChains]);
 
   const selection = useMemo(() => {
     const tokenDisplay = props.token ? <>{props.token.display}</> : <>Select</>;
@@ -261,13 +272,6 @@ function AssetPicker(props: Props) {
   );
 
   // If the amount input is empty, we don't need to check the quote which may be for the previous amount
-  // const receiveAmount =
-  //   !amount || amount.amount === '' || amount.amount === '0'
-  //     ? 0
-  //     : props.quote?.success && props.quote.amountOut
-  //     ? parseFloat(props.quote.amountOut)
-  //     : undefined;
-
   const receiveAmount =
     !props.isSource &&
     props.quote?.success &&
@@ -291,6 +295,9 @@ function AssetPicker(props: Props) {
           props.token.decimals,
         )
       : undefined;
+    if (props.token?.zapTokenInfo?.type === ZapAssetType.POOL) {
+      return getZapPoolAmountUSD(props.quote);
+    }
     if (props.token && tokenAmount) {
       return calculateUSDPrice(getTokenPrice, tokenAmount, props.token);
     }
@@ -307,7 +314,7 @@ function AssetPicker(props: Props) {
   const amountUSDValue =
     props.token && tokenPrice ? (
       <Typography color={theme.palette.text.secondary} fontSize="12px">
-        {tokenPrice ?? null}
+        ${tokenPrice ?? null}
       </Typography>
     ) : null;
 
@@ -328,6 +335,7 @@ function AssetPicker(props: Props) {
     (chain: Chain) => {
       props.setChain(chain);
       setSearchQuery('');
+      // Provider will be updated automatically by the useEffect when chainConfig changes
     },
     [props],
   );

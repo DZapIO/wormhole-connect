@@ -399,6 +399,15 @@ export class ZapAssetMapping<T> extends TokenMapping<T> {
       return this._mapping.get(tokenId.chain)?.get(tokenId.address.toString());
     }
   }
+
+  getAllPoolsForChain(chain: Chain): T[] {
+    const zapAssets = this._mapping.get(chain);
+    if (!zapAssets) return [];
+
+    return Array.from(zapAssets.values()).filter(
+      (asset: any) => asset.zapTokenInfo?.type === ZapAssetType.POOL,
+    );
+  }
 }
 
 export class ZapAssetCache extends ZapAssetMapping<ZapAsset> {

@@ -138,7 +138,7 @@ export const ZapProvider: React.FC<ZapProviderProps> = ({ children }) => {
       }
 
       // Check cache first (like getOrFetchToken)
-      const allCachedAssets = config.zapAssets.getAllForChain(chain);
+      const allCachedAssets = config.zapAssets.getAllPoolsForChain(chain);
       const cachedPools = allCachedAssets.filter(
         (asset) => !provider || asset.zapTokenInfo?.provider === provider,
       );

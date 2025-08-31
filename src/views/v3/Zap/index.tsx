@@ -30,8 +30,9 @@ import useGetTokenBalances from 'hooks/useGetTokenBalances';
 
 import Button from 'components/v3/Button';
 import { useTokens } from 'contexts/TokensContext';
-import { useGetZapAssets } from 'hooks/zap/useGetZapAssets';
 import { useWalletCompatibility } from 'hooks/useWalletCompatibility';
+import useComputeZapDestinationTokens from 'hooks/zap/useComputeZapDestinationTokens';
+import { useGetZapAssets } from 'hooks/zap/useGetZapAssets';
 import { useZapQuotes } from 'hooks/zap/useZapQuotes';
 import HistoryIcon from 'icons/History';
 import PoweredByIcon from 'icons/PoweredBy';
@@ -47,10 +48,10 @@ import {
 } from 'store/zap';
 import { copyTextToClipboard } from 'utils';
 import { getChainFromId } from 'utils/chainMapping';
-import { getFilteredChains } from 'utils/sdkv2';
 import { OPACITY } from 'utils/style';
 import { useValidate } from 'utils/transferValidation';
 import { TransferWallet } from 'utils/wallet';
+import { getZapChainConfigs } from 'utils/zap';
 import SwapInputs from 'views/v3/Bridge/SwapInputs';
 import WalletConnector from 'views/v3/Bridge/WalletConnector';
 import TxHistoryWidget from 'views/v3/TxHistory/Widget';
@@ -138,7 +139,6 @@ function Zap(props: ZapProps) {
     toChain: destChain,
     route,
     amount,
-
     isTransactionInProgress,
     validations: _validations,
   } = useSelector((state: RootState) => ({
@@ -207,15 +207,17 @@ function Zap(props: ZapProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sourceChain, lastTokenCacheUpdate]);
 
-  // Supported chains for the source network
-  const supportedSourceChains = useMemo(() => {
-    return getFilteredChains(supportedChains, sourceChain);
-  }, [sourceChain, supportedChains]);
+  const { isFetching: isFetchingSupportedDestTokens, supportedDestTokens } =
+    useComputeZapDestinationTokens({
+      sourceChain,
+      destChain,
+      sourceToken,
+    });
 
-  // Supported chains for the destination network
-  const supportedDestChains = useMemo(() => {
-    return getFilteredChains(supportedChains, sourceChain);
-  }, [sourceChain, supportedChains]);
+  // Supported chains for the source network
+  const supportedZapChains = useMemo(() => {
+    return getZapChainConfigs(supportedChains);
+  }, [supportedChains]);
 
   // Build balance requests for source and destination
   const sourceBalanceRequest = useMemo(() => {
@@ -452,7 +454,7 @@ function Zap(props: ZapProps) {
         <Box ref={popoverAnchorRef}>
           <AssetPicker
             chain={sourceChain}
-            chainList={supportedSourceChains}
+            chainList={supportedZapChains}
             token={sourceToken}
             tokenList={sourceTokens}
             setChain={handleSourceChainChange}
@@ -474,12 +476,12 @@ function Zap(props: ZapProps) {
         {/* Destination asset picker */}
         <AssetPicker
           chain={destChain}
-          chainList={supportedDestChains}
+          chainList={supportedZapChains}
           token={destToken}
           sourceToken={sourceToken}
-          tokenList={undefined}
+          tokenList={supportedDestTokens}
           isFetchingQuotes={isFetchingQuotes}
-          isFetchingTokens={false}
+          isFetchingTokens={isFetchingSupportedDestTokens}
           setChain={handleDestChainChange}
           setToken={handleDestZapAssetChange}
           wallet={receivingWallet}

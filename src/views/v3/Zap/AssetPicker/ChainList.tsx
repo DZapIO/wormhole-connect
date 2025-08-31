@@ -111,7 +111,6 @@ function ChainList(props: Props) {
   }, [chainList, selectedChainConfig]);
 
   const showMoreButton = (chainList?.length ?? 0) > SHORT_LIST_SIZE;
-
   const shortList = useMemo(() => {
     return (
       <List component={Stack} direction="row" data-testid="chain-short-list">
