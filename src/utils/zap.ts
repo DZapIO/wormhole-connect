@@ -4,7 +4,7 @@ import type { ChainConfig } from 'config';
 import config from 'config';
 import { getChainId } from './chainMapping';
 import type { ZapQuoteResult } from 'hooks/zap/useFetchZapQuotes';
-import { formatWithCommas } from './formatNumber';
+import { getUSDFormat } from 'utils';
 
 export function getZapChainConfigs(
   supportedChains: Array<Chain>,
@@ -45,7 +45,8 @@ export const getZapPoolAmountUSD = (quote: ZapQuoteResult | undefined) => {
     const output = lastPathItem?.output;
     if (output && Array.isArray(output) && output.length > 0) {
       const amountUSD = output[0]?.amountUSD;
-      return amountUSD ? formatWithCommas(amountUSD) : null;
+      return amountUSD ? getUSDFormat(parseFloat(amountUSD)) : null;
     }
   }
+  return null;
 };

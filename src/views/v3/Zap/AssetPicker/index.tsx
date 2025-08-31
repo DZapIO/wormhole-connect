@@ -302,7 +302,7 @@ function AssetPicker(props: Props) {
   const amountUSDValue =
     props.token && tokenPrice ? (
       <Typography color={theme.palette.text.secondary} fontSize="12px">
-        ${tokenPrice ?? null}
+        {tokenPrice ?? null}
       </Typography>
     ) : null;
 
