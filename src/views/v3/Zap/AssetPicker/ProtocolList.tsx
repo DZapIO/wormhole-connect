@@ -31,7 +31,7 @@ function ProtocolList(props: Props) {
   const theme = useTheme();
   const [providerSearchQuery, setProviderSearchQuery] = useState('');
   const { providers, zappingChains } = useSelector(
-    (state: RootState) => state.zapInput,
+    (state: RootState) => state.transferInput,
   );
 
   const styles = useMemo(

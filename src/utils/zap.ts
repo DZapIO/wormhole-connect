@@ -1,9 +1,8 @@
-import type { ZapChains } from '@dzapio/sdk';
+import type { ZapChains, ZapQuoteResponse } from '@dzapio/sdk';
 import type { Chain } from '@wormhole-foundation/sdk';
 import type { ChainConfig } from 'config';
 import config from 'config';
 import { getChainId } from './chainMapping';
-import type { ZapQuoteResult } from 'hooks/zap/useFetchZapQuotes';
 import { getUSDFormat } from 'utils';
 
 export function getZapChainConfigs(
@@ -35,7 +34,7 @@ export const getDefaultProvider = (
   return supportedProviders?.[0] || undefined;
 };
 
-export const getZapPoolAmountUSD = (quote: ZapQuoteResult | undefined) => {
+export const getZapPoolAmountUSD = (quote: ZapQuoteResponse | undefined) => {
   if (!quote) {
     return null;
   }

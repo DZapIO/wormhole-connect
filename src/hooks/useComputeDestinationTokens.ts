@@ -8,6 +8,7 @@ import type { Token } from 'config/tokens';
 
 import type { Chain, TokenId } from '@wormhole-foundation/sdk';
 import { useTokens } from 'contexts/TokensContext';
+import { isZapPosition } from 'config/zapAsset';
 
 type Props = {
   sourceChain: Chain | undefined;
@@ -39,7 +40,8 @@ const computeDestTokensForChains = async (
 
   // User hasn't selected a source chain yet, so we
   // return all of the known tokens on the destination chain.
-  if (!sourceChain) {
+  // Also return all of the known tokens on the destination chain if the source token is a position
+  if (!sourceChain || (sourceToken && isZapPosition(sourceToken.tuple))) {
     return config.tokens.getAllForChain(destChain);
   }
 

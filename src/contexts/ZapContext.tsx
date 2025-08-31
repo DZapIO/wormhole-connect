@@ -20,7 +20,7 @@ import React, {
   type ReactNode,
 } from 'react';
 import { useDispatch } from 'react-redux';
-import { setZappingChains, setZappingProviders } from 'store/zap';
+import { setZappingChains, setZappingProviders } from 'store/transferInput';
 import { getChainFromId } from 'utils/chainMapping';
 import { cacheZapPools, cacheZapPositions } from 'utils/zapAssetCache';
 

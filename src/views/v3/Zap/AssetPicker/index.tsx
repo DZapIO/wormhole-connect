@@ -20,7 +20,7 @@ import type { AmountValidationResult } from 'hooks/useAmountValidation';
 import { useTokenList } from 'hooks/useTokenList';
 import type { RootState } from 'store';
 import type { WalletData } from 'store/wallet';
-import { isDisabledChain, setAmount } from 'store/zap';
+import { isDisabledChain, setAmount } from 'store/transferInput';
 import { calculateUSDPrice } from 'utils';
 import { formatWithCommas } from 'utils/formatNumber';
 import { OPACITY } from 'utils/style';
@@ -28,7 +28,7 @@ import { TransferWallet } from 'utils/wallet';
 import type { Balances } from 'utils/wallet/types';
 import { getDefaultProvider, getZapPoolAmountUSD } from 'utils/zap';
 import WalletController from 'views/v3/Bridge/WalletConnector/Controller';
-import AmountInput from 'views/v3/Zap/AmountInput';
+import AmountInput from 'views/v3/Bridge/AmountInput';
 import AssetPickerDrawer from 'views/v3/Zap/AssetPicker/PickerBottomSheet';
 import AssetPickerPopover from 'views/v3/Zap/AssetPicker/PickerModal';
 
@@ -64,7 +64,7 @@ function AssetPicker(props: Props) {
     token: zapToken,
     fromChain,
     zappingChains,
-  } = useSelector((state: RootState) => state.zapInput);
+  } = useSelector((state: RootState) => state.transferInput);
   const { getTokenPrice } = useTokens();
 
   const chainConfig: ChainConfig | undefined = useMemo(() => {

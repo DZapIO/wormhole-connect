@@ -38,7 +38,8 @@ import {
   EvmUnsignedTransaction,
 } from '@wormhole-foundation/sdk-evm';
 import axios from 'axios';
-import { getAllTokenIdsForChain } from '../../utils/tokenHelpers';
+import { getChainId } from 'utils/chainMapping';
+import { getAllZapTokenIdsForChain } from '../../utils/tokenHelpers';
 import {
   getNativeContractAddress,
   getTransactionStatus,
@@ -47,7 +48,6 @@ import {
   supportedChains,
   txStatusToReceipt,
 } from './utils';
-import { getChainId } from 'utils/chainMapping';
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace DZapRoute {
@@ -119,7 +119,7 @@ class DZapRouteBase<N extends Network> extends routes.AutomaticRoute<
     _fromChain: ChainContext<N>,
     toChain: ChainContext<N>,
   ): Promise<TokenId[]> {
-    return getAllTokenIdsForChain(toChain.chain);
+    return getAllZapTokenIdsForChain(toChain.chain);
   }
 
   async isAvailable(): Promise<boolean> {

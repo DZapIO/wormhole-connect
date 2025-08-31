@@ -8,6 +8,21 @@ import memoize from 'fast-memoize';
  */
 export const getAllTokenIdsForChain = memoize(
   (chain: Chain): TokenId[] => {
+    return config.tokens.getAllForChain(chain).map((token) => token.tokenId);
+  },
+  {
+    // Invalidate when token cache updates by including lastUpdate in the key
+    serializer: (args: unknown[]) =>
+      `${String(args[0])}|${config.tokens.lastUpdate.getTime()}`,
+  },
+);
+
+/**
+ * Returns all token and pool IDs for a given chain.
+ * Used by routes that support Zap
+ */
+export const getAllZapTokenIdsForChain = memoize(
+  (chain: Chain): TokenId[] => {
     return [
       ...config.tokens.getAllForChain(chain).map((token) => token.tokenId),
       ...config.zapAssets.getAllForChain(chain).map((asset) => asset.tokenId),

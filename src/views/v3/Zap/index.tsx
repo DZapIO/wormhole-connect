@@ -30,11 +30,10 @@ import useGetTokenBalances from 'hooks/useGetTokenBalances';
 
 import Button from 'components/v3/Button';
 import { useTokens } from 'contexts/TokensContext';
+import useConfirmTransaction from 'hooks/useConfirmTransaction';
+import { useGetTokens } from 'hooks/useGetTokens';
 import { useSortedRoutesWithQuotes } from 'hooks/useSortedRoutesWithQuotes';
 import { useWalletCompatibility } from 'hooks/useWalletCompatibility';
-import useComputeZapDestinationTokens from 'hooks/zap/useComputeZapDestinationTokens';
-import useConfirmZapTransaction from 'hooks/zap/useConfirmZapTransaction';
-import { useGetZapAssets } from 'hooks/zap/useGetZapAssets';
 import HistoryIcon from 'icons/History';
 import PoweredByIcon from 'icons/PoweredBy';
 import type { RootState } from 'store';
@@ -46,7 +45,7 @@ import {
   setDestToken,
   setToken,
   setTransferRoute,
-} from 'store/zap';
+} from 'store/transferInput';
 import { copyTextToClipboard } from 'utils';
 import { getChainFromId } from 'utils/chainMapping';
 import { OPACITY } from 'utils/style';
@@ -59,7 +58,7 @@ import AmountValidationError from '../Bridge/AmountValidationError';
 import Routes from '../Bridge/Routes';
 import TxHistory from '../TxHistory';
 import AssetPicker from './AssetPicker';
-// import ZapTxHistoryWidget from './TxHistory/Widget';
+import useComputeDestinationTokens from 'hooks/useComputeDestinationTokens';
 
 export type ZapProps = {
   showHistory?: boolean;
@@ -75,7 +74,9 @@ function Zap(props: ZapProps) {
   const { lastTokenCacheUpdate } = useTokens();
 
   // Get zappingChains from Redux store
-  const { zappingChains } = useSelector((state: RootState) => state.zapInput);
+  const { zappingChains, preferredRouteName } = useSelector(
+    (state: RootState) => state.transferInput,
+  );
 
   const styles = useMemo(
     () => ({
@@ -144,22 +145,23 @@ function Zap(props: ZapProps) {
     isTransactionInProgress,
     validations: _validations,
   } = useSelector((state: RootState) => ({
-    ...state.zapInput,
+    ...state.transferInput,
     ...state.relay,
   }));
 
-  // Get zap assets from zapInput store
+  // Get zap assets from.transferInput store
   const { token: sourceZapAsset, destToken: destZapAsset } = useSelector(
-    (state: RootState) => state.zapInput,
+    (state: RootState) => state.transferInput,
   );
   const isSameChainSwap = sourceChain === destChain;
 
-  const { sourceToken, destToken } = useGetZapAssets();
+  const { sourceToken, destToken } = useGetTokens();
 
   const {
     quotes,
     isFetching: isFetchingQuotes,
     sortedRoutes,
+    sortedRoutesWithQuotes,
   } = useSortedRoutesWithQuotes({
     amount,
     fromChain: sourceChain,
@@ -172,14 +174,37 @@ function Zap(props: ZapProps) {
 
   const quote = Object.values(quotes)[0];
 
-  // For zap operations, we don't need route selection since there's only one zap provider
   useEffect(() => {
-    if (quote?.success) {
-      dispatch(setTransferRoute('zap'));
-    } else {
+    if (sortedRoutesWithQuotes.length === 0) {
       dispatch(setTransferRoute(''));
+    } else {
+      const preferredRoute = sortedRoutesWithQuotes.find(
+        (route) => route.route === preferredRouteName,
+      );
+      const autoselectedRoute =
+        route ?? preferredRoute?.route ?? sortedRoutesWithQuotes[0].route;
+
+      const isSelectedRouteValid =
+        sortedRoutesWithQuotes.findIndex((r) => r.route === autoselectedRoute) >
+        -1;
+
+      if (!isSelectedRouteValid) {
+        dispatch(setTransferRoute(''));
+      }
+
+      // If no route is autoselected or we already have a valid selected route,
+      // we should avoid overwriting it
+      if (!autoselectedRoute || (route && isSelectedRouteValid)) {
+        return;
+      }
+
+      const routeData = sortedRoutesWithQuotes?.find(
+        (rs) => rs.route === autoselectedRoute,
+      );
+
+      if (routeData) dispatch(setTransferRoute(routeData.route));
     }
-  }, [quote, dispatch]);
+  }, [preferredRouteName, route, sortedRoutesWithQuotes, dispatch]);
 
   // Connect to any previously used wallets for the selected networks
   const { isConnecting: isConnectingWallet } = useConnectToLastUsedWallet(
@@ -212,7 +237,7 @@ function Zap(props: ZapProps) {
   }, [sourceChain, lastTokenCacheUpdate]);
 
   const { isFetching: isFetchingSupportedDestTokens, supportedDestTokens } =
-    useComputeZapDestinationTokens({
+    useComputeDestinationTokens({
       sourceChain,
       destChain,
       sourceToken,
@@ -340,7 +365,7 @@ function Zap(props: ZapProps) {
     error: txError,
     errorInternal: txErrorInternal,
     onConfirm,
-  } = useConfirmZapTransaction({ quotes });
+  } = useConfirmTransaction({ quotes });
 
   const transactionError = useMemo(() => {
     if (!txError) {

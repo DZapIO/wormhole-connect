@@ -26,7 +26,7 @@ import type { QuoteResult } from 'routes/operator';
 import type { RootState } from 'store';
 import type { RelayerFee } from 'store/relay';
 import { clearCache as clearBalanceCache } from 'utils/balanceCache';
-import { useGetZapAssets } from './zap/useGetZapAssets';
+import { useGetTokens } from './useGetTokens';
 
 type Props = {
   quotes: Record<string, QuoteResult | undefined>;
@@ -63,7 +63,7 @@ const useConfirmTransaction = (props: Props): ReturnProps => {
     validations,
   } = transferInput;
 
-  const { sourceToken, destToken } = useGetZapAssets();
+  const { sourceToken, destToken } = useGetTokens();
 
   const wallet = useSelector((state: RootState) => state.wallet);
   const { sending: sendingWallet, receiving: receivingWallet } = wallet;
