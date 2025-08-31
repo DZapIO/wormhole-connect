@@ -8,7 +8,10 @@ import memoize from 'fast-memoize';
  */
 export const getAllTokenIdsForChain = memoize(
   (chain: Chain): TokenId[] => {
-    return config.tokens.getAllForChain(chain).map((token) => token.tokenId);
+    return [
+      ...config.tokens.getAllForChain(chain).map((token) => token.tokenId),
+      ...config.zapAssets.getAllForChain(chain).map((asset) => asset.tokenId),
+    ];
   },
   {
     // Invalidate when token cache updates by including lastUpdate in the key

@@ -30,10 +30,11 @@ import useGetTokenBalances from 'hooks/useGetTokenBalances';
 
 import Button from 'components/v3/Button';
 import { useTokens } from 'contexts/TokensContext';
+import { useSortedRoutesWithQuotes } from 'hooks/useSortedRoutesWithQuotes';
 import { useWalletCompatibility } from 'hooks/useWalletCompatibility';
 import useComputeZapDestinationTokens from 'hooks/zap/useComputeZapDestinationTokens';
+import useConfirmZapTransaction from 'hooks/zap/useConfirmZapTransaction';
 import { useGetZapAssets } from 'hooks/zap/useGetZapAssets';
-import { useZapQuotes } from 'hooks/zap/useZapQuotes';
 import HistoryIcon from 'icons/History';
 import PoweredByIcon from 'icons/PoweredBy';
 import type { RootState } from 'store';
@@ -54,10 +55,11 @@ import { TransferWallet } from 'utils/wallet';
 import { getZapChainConfigs } from 'utils/zap';
 import SwapInputs from 'views/v3/Bridge/SwapInputs';
 import WalletConnector from 'views/v3/Bridge/WalletConnector';
-import TxHistoryWidget from 'views/v3/TxHistory/Widget';
-import AssetPicker from 'views/v3/Zap/AssetPicker';
 import AmountValidationError from '../Bridge/AmountValidationError';
+import Routes from '../Bridge/Routes';
 import TxHistory from '../TxHistory';
+import AssetPicker from './AssetPicker';
+// import ZapTxHistoryWidget from './TxHistory/Widget';
 
 export type ZapProps = {
   showHistory?: boolean;
@@ -154,19 +156,21 @@ function Zap(props: ZapProps) {
 
   const { sourceToken, destToken } = useGetZapAssets();
 
-  const { quote, isFetching: isFetchingQuotes } = useZapQuotes({
+  const {
+    quotes,
+    isFetching: isFetchingQuotes,
+    sortedRoutes,
+  } = useSortedRoutesWithQuotes({
     amount,
     fromChain: sourceChain,
     toChain: destChain,
-    slippage: 0.5, // TODO: Add slippage control
+    toNativeToken: 0,
     sourceToken,
     destToken,
     receivingWallet,
   });
 
-  // TODO: Implement zap-specific transaction confirmation
-  const txError = null;
-  const txErrorInternal = null as { message: string } | null;
+  const quote = Object.values(quotes)[0];
 
   // For zap operations, we don't need route selection since there's only one zap provider
   useEffect(() => {
@@ -332,6 +336,12 @@ function Zap(props: ZapProps) {
     routes: quote ? ['zap'] : [],
   });
 
+  const {
+    error: txError,
+    errorInternal: txErrorInternal,
+    onConfirm,
+  } = useConfirmZapTransaction({ quotes });
+
   const transactionError = useMemo(() => {
     if (!txError) {
       return null;
@@ -374,11 +384,6 @@ function Zap(props: ZapProps) {
   const hasEnteredAmount = amount && sdkAmount.whole(amount) > 0;
 
   const hasConnectedWallets = sendingWallet.address && receivingWallet.address;
-  // const {
-  //   error: txError,
-  //   errorInternal: txErrorInternal,
-  //   onConfirm,
-  // } = useConfirmTransaction({ quotes });
 
   const confirmButtonTooltip =
     !sourceChain || !sourceZapAsset
@@ -412,7 +417,7 @@ function Zap(props: ZapProps) {
         data-testid="confirm-transaction-button"
         variant="primary"
         styleOverrides={styles.confirmTransaction}
-        onClick={() => {}}
+        onClick={onConfirm}
       >
         {isTransactionInProgress ? (
           <Typography
@@ -492,9 +497,7 @@ function Zap(props: ZapProps) {
           isConnectingWallet={isConnectingWallet}
           balances={balances.destination.balances}
           isFetchingBalances={balances.isFetching}
-          quote={
-            destQuoteResult?.success ? (destQuoteResult as any) : undefined
-          }
+          quote={destQuoteResult?.success ? destQuoteResult : undefined}
           anchorEl={popoverAnchorRef.current}
         />
       </Stack>
@@ -521,7 +524,11 @@ function Zap(props: ZapProps) {
       <Box sx={styles.titleContent}>
         <ConfigurablePageHeader />
         {config.ui.showInProgressWidget && (
-          <TxHistoryWidget disabled={isTxHistoryDisabled} />
+          // <ZapTxHistoryWidget
+          //   transactions={[]} // TODO: Get actual Zap transactions
+          //   disabled={isTxHistoryDisabled}
+          // />
+          <></>
         )}
         <Box sx={styles.zapHeader}>
           <Header
@@ -563,11 +570,17 @@ function Zap(props: ZapProps) {
       >
         {showHistory ? <TxHistory /> : <>{bridgeContent}</>}
       </Box>
-      {/* {hasEnteredAmount && !showHistory && quote && (
+      {hasEnteredAmount && !showHistory && (
         <Box sx={{ marginTop: '12px', width: '100%' }}>
-          <Routes selectedRoute={quote} isLoading={isFetchingQuotes} />
+          <Routes
+            routes={sortedRoutes}
+            selectedRoute={route}
+            onRouteChange={() => {}}
+            quotes={quotes}
+            isLoading={isFetchingQuotes}
+          />
         </Box>
-      )} */}
+      )}
       {config.ui.showFooter && (
         <>
           <PoweredByIcon color={theme.palette.text.primary} />

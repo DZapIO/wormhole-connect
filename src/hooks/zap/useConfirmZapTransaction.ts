@@ -26,7 +26,7 @@ import type { QuoteResult } from 'routes/operator';
 import type { RootState } from 'store';
 import type { RelayerFee } from 'store/relay';
 import { clearCache as clearBalanceCache } from 'utils/balanceCache';
-import { useGetZapAssets } from './zap/useGetZapAssets';
+import { useGetZapAssets } from './useGetZapAssets';
 
 type Props = {
   quotes: Record<string, QuoteResult | undefined>;
@@ -40,7 +40,7 @@ type ReturnProps = {
   onConfirm: () => void;
 };
 
-const useConfirmTransaction = (props: Props): ReturnProps => {
+const useConfirmZapTransaction = (props: Props): ReturnProps => {
   const dispatch = useDispatch();
 
   const [error, setError] = useState<string | undefined>(undefined);
@@ -53,17 +53,19 @@ const useConfirmTransaction = (props: Props): ReturnProps => {
   const routeContext = useContext(RouteContext);
   const { walletProvider } = useWalletProvider();
 
-  const transferInput = useSelector((state: RootState) => state.transferInput);
+  const transferInput = useSelector((state: RootState) => state.zapInput);
 
   const {
     amount,
     fromChain: sourceChain,
     toChain: destChain,
-    route,
     validations,
   } = transferInput;
 
   const { sourceToken, destToken } = useGetZapAssets();
+
+  // TODO: Remove this once we have a way to get the route from the zapInput store
+  const route = 'DZap';
 
   const wallet = useSelector((state: RootState) => state.wallet);
   const { sending: sendingWallet, receiving: receivingWallet } = wallet;
@@ -286,5 +288,4 @@ const useConfirmTransaction = (props: Props): ReturnProps => {
     errorInternal,
   };
 };
-
-export default useConfirmTransaction;
+export default useConfirmZapTransaction;

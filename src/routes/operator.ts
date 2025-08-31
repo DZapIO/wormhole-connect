@@ -1,12 +1,13 @@
 import config from 'config';
 import type { Token } from 'config/tokens';
 import { parseTokenKey, tokenKey } from 'config/tokens';
-import { maybeLogSdkError } from 'utils/errors';
 import memoize from 'fast-memoize';
+import { maybeLogSdkError } from 'utils/errors';
 
-import type { Chain, TransactionId, TokenId } from '@wormhole-foundation/sdk';
+import type { Chain, TokenId, TransactionId } from '@wormhole-foundation/sdk';
 import { routes, amount as sdkAmount } from '@wormhole-foundation/sdk';
 
+import { DZapRoute } from './dZap';
 import SDKv2Route from './sdkv2';
 
 export interface TxInfo {
@@ -19,11 +20,12 @@ export type QuoteResult = routes.QuoteResult<routes.Options>;
 type forEachCallback<T> = (name: string, route: SDKv2Route) => T;
 
 export const DEFAULT_ROUTES = [
-  routes.AutomaticCCTPRoute,
+  DZapRoute,
+  // routes.AutomaticCCTPRoute,
   routes.CCTPRoute,
-  routes.AutomaticTokenBridgeRoute,
-  routes.TokenBridgeRoute,
-  routes.TBTCRoute,
+  // routes.AutomaticTokenBridgeRoute,
+  // routes.TokenBridgeRoute,
+  // routes.TBTCRoute,
 ];
 
 export interface QuoteParams {
@@ -36,7 +38,7 @@ export interface QuoteParams {
   recipient?: string; // wallet may be undefined when not connected
 }
 
-export default class RouteOperator {
+export default class Routeperator {
   preference: string[];
   routes: Record<string, SDKv2Route>;
   quoteCache: QuoteCache;

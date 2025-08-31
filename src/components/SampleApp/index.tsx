@@ -40,6 +40,7 @@ import {
   MayanRouteSWIFT,
   MayanRouteMONOCHAIN,
 } from '../../routes/mayan';
+import { DZapRoute } from '../../routes/dZap';
 import { NTT_TEST_CONFIG_TESTNET, NTT_TEST_CONFIG_MAINNET } from './consts';
 import { DEFAULT_ROUTES } from 'routes/operator';
 import { nttRoutes } from 'exports/ntt';
@@ -81,6 +82,8 @@ const parseConfig = (config: string): WormholeConnectConfig => {
       window.MayanRouteMONOCHAIN = MayanRouteMONOCHAIN;
       /* @ts-ignore */
       window.MayanRouteSWIFT = MayanRouteSWIFT;
+      /* @ts-ignore */
+      window.DZapRoute = DZapRoute;
       /* @ts-ignore */
       window.testNttRoutesTestnet = () => nttRoutes(NTT_TEST_CONFIG_TESTNET);
       /* @ts-ignore */

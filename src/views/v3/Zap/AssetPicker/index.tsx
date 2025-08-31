@@ -4,7 +4,7 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import { useTheme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
-import type { Chain } from '@wormhole-foundation/sdk';
+import type { Chain, routes } from '@wormhole-foundation/sdk';
 import { amount as sdkAmount } from '@wormhole-foundation/sdk';
 import { bindTrigger, usePopupState } from 'material-ui-popup-state/hooks';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
@@ -17,7 +17,6 @@ import type { ChainConfig } from 'config/types';
 import { ZapAssetType, type ZapAsset } from 'config/zapAsset';
 import { useTokens } from 'contexts/TokensContext';
 import type { AmountValidationResult } from 'hooks/useAmountValidation';
-import type { ZapQuoteResult } from 'hooks/zap/useFetchZapQuotes';
 import { useTokenList } from 'hooks/useTokenList';
 import type { RootState } from 'store';
 import type { WalletData } from 'store/wallet';
@@ -27,11 +26,11 @@ import { formatWithCommas } from 'utils/formatNumber';
 import { OPACITY } from 'utils/style';
 import { TransferWallet } from 'utils/wallet';
 import type { Balances } from 'utils/wallet/types';
+import { getDefaultProvider, getZapPoolAmountUSD } from 'utils/zap';
 import WalletController from 'views/v3/Bridge/WalletConnector/Controller';
 import AmountInput from 'views/v3/Zap/AmountInput';
 import AssetPickerDrawer from 'views/v3/Zap/AssetPicker/PickerBottomSheet';
 import AssetPickerPopover from 'views/v3/Zap/AssetPicker/PickerModal';
-import { getDefaultProvider, getZapPoolAmountUSD } from 'utils/zap';
 
 type Props = {
   chain?: Chain | undefined;
@@ -52,7 +51,7 @@ type Props = {
   isFetchingBalances: boolean;
   isConnectingWallet?: boolean;
   amountValidation?: AmountValidationResult;
-  quote?: ZapQuoteResult | undefined;
+  quote?: routes.Quote<routes.Options> | undefined;
   anchorEl: HTMLElement | null;
 };
 
@@ -271,32 +270,21 @@ function AssetPicker(props: Props) {
     [theme],
   );
 
-  // If the amount input is empty, we don't need to check the quote which may be for the previous amount
   const receiveAmount =
-    !props.isSource &&
-    props.quote?.success &&
-    props.quote.amountOut &&
-    props.token
-      ? sdkAmount.display(
-          sdkAmount.fromBaseUnits(
-            BigInt(props.quote.amountOut ?? '0'),
-            props.token.decimals,
-          ),
-          props.token.decimals,
-        )
-      : '';
+    !amount || amount.amount === '' || amount.amount === '0'
+      ? 0
+      : props.quote
+      ? sdkAmount.whole(props.quote?.destinationToken.amount)
+      : undefined;
+
+  const receiveAmountText = receiveAmount ? receiveAmount.toString() : '';
 
   const tokenPrice = useMemo(() => {
     const tokenAmount = props.isSource
       ? amount
-      : props.quote?.success && props.quote.amountOut && props.token
-      ? sdkAmount.fromBaseUnits(
-          BigInt(props.quote.amountOut ?? '0'),
-          props.token.decimals,
-        )
-      : undefined;
+      : props.quote?.destinationToken.amount;
     if (props.token?.zapTokenInfo?.type === ZapAssetType.POOL) {
-      return getZapPoolAmountUSD(props.quote);
+      return getZapPoolAmountUSD(props.quote?.details);
     }
     if (props.token && tokenAmount) {
       return calculateUSDPrice(getTokenPrice, tokenAmount, props.token);
@@ -304,8 +292,8 @@ function AssetPicker(props: Props) {
     return null;
   }, [
     props.isSource,
-    props.quote?.success,
-    props.quote?.amountOut,
+    props.quote?.destinationToken.amount,
+    props.quote?.details,
     props.token,
     amount,
     getTokenPrice,
@@ -503,7 +491,7 @@ function AssetPicker(props: Props) {
             <AmountInput
               value={amountInput}
               debouncedValue={debouncedAmountInput}
-              receiveAmount={Number(receiveAmount)}
+              receiveAmount={Number(receiveAmountText)}
               supportedSourceTokens={props.tokenList || []}
               tokenBalance={tokenBalance}
               warning={props.amountValidation?.warning}
@@ -532,9 +520,9 @@ function AssetPicker(props: Props) {
                     style: {
                       // Shrink the font size based on the length of the input value
                       fontSize:
-                        receiveAmount.length > 12
+                        receiveAmountText.length > 12
                           ? '20px'
-                          : receiveAmount.length > 6
+                          : receiveAmountText.length > 6
                           ? '28px'
                           : '36px',
                       height: '36px',
@@ -546,7 +534,7 @@ function AssetPicker(props: Props) {
                   },
                 }}
                 variant="standard"
-                value={formatWithCommas(receiveAmount)}
+                value={formatWithCommas(receiveAmountText)}
               />
             </Box>
           )}

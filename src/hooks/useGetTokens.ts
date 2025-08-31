@@ -3,6 +3,7 @@ import type { Token } from 'config/tokens';
 import type { RootState } from 'store';
 import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
+import { isZapPoolOrPositionTuple } from 'config/zapAsset';
 
 export const useGetTokens = (): {
   sourceToken: Token | undefined;
@@ -44,5 +45,24 @@ export const useGetRedeemTokens = (): {
     [txData],
   );
 
-  return { sourceToken, destToken };
+  const sourceZapAsset = useMemo(
+    () =>
+      txData?.token && isZapPoolOrPositionTuple(txData?.token)
+        ? config.zapAssets.get(txData?.token)
+        : undefined,
+    [txData],
+  );
+
+  const destZapAsset = useMemo(
+    () =>
+      txData?.receivedToken && isZapPoolOrPositionTuple(txData?.receivedToken)
+        ? config.zapAssets.get(txData?.receivedToken)
+        : undefined,
+    [txData],
+  );
+
+  return {
+    sourceToken: sourceZapAsset || sourceToken,
+    destToken: destZapAsset || destToken,
+  };
 };

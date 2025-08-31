@@ -53,6 +53,11 @@ export interface ZapInputState {
   receiverNativeBalance: string | undefined;
   providers: ZapProviders;
   zappingChains: ZapChains;
+  // Zap Redeem functionality
+  redeemTxData?: any; // Replace with proper type
+  redeemRoute?: string;
+  isResumeTx?: boolean;
+  timestamp?: number;
 }
 
 // This is a function because config might have changed since we last cleared this store
@@ -244,6 +249,25 @@ export const zapInputSlice = createSlice({
     setZappingChains: (state, { payload }: PayloadAction<ZapChains>) => {
       state.zappingChains = payload;
     },
+    // Zap Redeem actions
+    setTxDetails: (state, { payload }: PayloadAction<any>) => {
+      state.redeemTxData = payload;
+    },
+    setRoute: (state, { payload }: PayloadAction<string>) => {
+      state.redeemRoute = payload;
+    },
+    setIsResumeTx: (state, { payload }: PayloadAction<boolean>) => {
+      state.isResumeTx = payload;
+    },
+    setTimestamp: (state, { payload }: PayloadAction<number>) => {
+      state.timestamp = payload;
+    },
+    clearZapRedeem: (state) => {
+      state.redeemTxData = undefined;
+      state.redeemRoute = undefined;
+      state.isResumeTx = false;
+      state.timestamp = undefined;
+    },
     swapInputs: (state: ZapInputState) => {
       const tmpChain = state.fromChain;
       state.fromChain = state.toChain;
@@ -320,6 +344,12 @@ export const {
   swapInputs,
   setZappingProviders,
   setZappingChains,
+  // Zap Redeem actions
+  setTxDetails,
+  setRoute,
+  setIsResumeTx,
+  setTimestamp,
+  clearZapRedeem,
 } = zapInputSlice.actions;
 
 export default zapInputSlice.reducer;
