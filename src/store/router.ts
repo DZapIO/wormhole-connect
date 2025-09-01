@@ -8,9 +8,7 @@ export type Route =
   | 'history'
   | 'search'
   | 'terms'
-  | 'zap'
-  | 'zap-redeem'
-  | 'zap-history';
+  | 'zap';
 
 export interface RouterState {
   route: Route;

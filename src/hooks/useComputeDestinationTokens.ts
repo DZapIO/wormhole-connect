@@ -39,7 +39,6 @@ const computeDestTokensForChains = async (
 
   // User hasn't selected a source chain yet, so we
   // return all of the known tokens on the destination chain.
-  // Also return all of the known tokens on the destination chain if the source token is a position
   if (!sourceChain) {
     return config.tokens.getAllForChain(destChain);
   }

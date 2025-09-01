@@ -121,7 +121,6 @@ export async function getTokenMetadataSui(
   }
 }
 
-// Helper functions to handle both config.tokens and config.zapAssets
 export const findTokenByAddressOrSymbol = (
   chain: Chain,
   addressOrSymbol: string,
@@ -148,7 +147,6 @@ export const findTokenBySymbol = (
   return zapAsset;
 };
 
-// Helper functions to handle both config.tokens and config.zapAssets
 export const getTokenFromTuple = (
   tokenTuple: TokenTuple,
 ): Token | ZapAsset | undefined => {
