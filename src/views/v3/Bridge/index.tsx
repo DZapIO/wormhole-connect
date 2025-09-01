@@ -195,7 +195,6 @@ function Bridge(props: BridgeProps) {
     errorInternal: txErrorInternal,
     onConfirm,
   } = useConfirmTransaction({ quotes });
-  console.log({ quotes });
 
   // Set selectedRoute if the route is auto-selected
   // After the auto-selection, we set selectedRoute when user clicks on a route in the list

@@ -7,6 +7,7 @@ import { maybeLogSdkError } from 'utils/errors';
 import type { Chain, TokenId, TransactionId } from '@wormhole-foundation/sdk';
 import { routes, amount as sdkAmount } from '@wormhole-foundation/sdk';
 
+import { isZapAssetId } from 'config/zapAsset';
 import { DZapRoute } from './dZap';
 import SDKv2Route from './sdkv2';
 
@@ -158,6 +159,10 @@ export default class Routeperator {
         );
 
         for (const token of destTokenIds) {
+          //TODO: hack to not show pools or positions in the list of dest tokens
+          if (isZapAssetId(token)) {
+            continue;
+          }
           supported.add(tokenKey(token));
         }
       } catch (e) {

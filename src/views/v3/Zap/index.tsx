@@ -23,13 +23,15 @@ import FooterNavBar from 'components/FooterNavBar';
 import Header from 'components/Header';
 import AlertBannerV3 from 'components/v3/AlertBanner';
 import config from 'config';
-import { type ZapAsset } from 'config/zapAsset';
 
 import { useConnectToLastUsedWallet } from 'hooks/useConnectToLastUsedWallet';
 import useGetTokenBalances from 'hooks/useGetTokenBalances';
 
 import Button from 'components/v3/Button';
+import { type Token } from 'config/tokens';
 import { useTokens } from 'contexts/TokensContext';
+import { useAmountValidation } from 'hooks/useAmountValidation';
+import useComputeDestinationTokens from 'hooks/useComputeDestinationTokens';
 import useConfirmTransaction from 'hooks/useConfirmTransaction';
 import { useGetTokens } from 'hooks/useGetTokens';
 import { useSortedRoutesWithQuotes } from 'hooks/useSortedRoutesWithQuotes';
@@ -47,18 +49,17 @@ import {
   setTransferRoute,
 } from 'store/transferInput';
 import { copyTextToClipboard } from 'utils';
-import { getChainFromId } from 'utils/chainMapping';
+import { getFilteredChains } from 'utils/sdkv2';
 import { OPACITY } from 'utils/style';
-import { useValidate } from 'utils/transferValidation';
+import { isTransferValid, useValidate } from 'utils/transferValidation';
 import { TransferWallet } from 'utils/wallet';
-import { getZapChainConfigs } from 'utils/zap';
 import SwapInputs from 'views/v3/Bridge/SwapInputs';
 import WalletConnector from 'views/v3/Bridge/WalletConnector';
 import AmountValidationError from '../Bridge/AmountValidationError';
 import Routes from '../Bridge/Routes';
 import TxHistory from '../TxHistory';
+import TxHistoryWidget from '../TxHistory/Widget';
 import AssetPicker from './AssetPicker';
-import useComputeDestinationTokens from 'hooks/useComputeDestinationTokens';
 
 export type ZapProps = {
   showHistory?: boolean;
@@ -66,30 +67,53 @@ export type ZapProps = {
 
 function Zap(props: ZapProps) {
   const theme: any = useTheme();
-  const [showHistory, setShowHistory] = useState(props.showHistory ?? false);
-  const mobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const popoverAnchorRef = useRef<HTMLElement>(null);
   const dispatch = useDispatch();
-  const [errorCopied, setErrorCopied] = useState(false);
-  const { lastTokenCacheUpdate } = useTokens();
 
-  // Get zappingChains from Redux store
-  const { zappingChains, preferredRouteName } = useSelector(
-    (state: RootState) => state.transferInput,
-  );
+  const [showHistory, setShowHistory] = useState(props.showHistory ?? false);
+
+  const { lastTokenCacheUpdate } = useTokens();
+  const [errorCopied, setErrorCopied] = useState(false);
+
+  const mobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const popoverAnchorRef = useRef<HTMLElement>(null);
 
   const styles = useMemo(
     () => ({
-      zapContent: {
+      assetPickerTitle: {
+        color: theme.palette.text.secondary,
+        display: 'flex',
+        minHeight: '40px',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      },
+      bridgeContent: {
         margin: 'auto',
         maxWidth: '452px',
       },
-      zapHeader: {
+      bridgeHeader: {
         width: '100%',
         minHeight: '28px',
         display: 'flex',
         alignItems: 'center',
         padding: '20px 0',
+      },
+      doneIcon: {
+        fontSize: '14px',
+        color: theme.palette.success.main,
+      },
+      confirmTransaction: {
+        padding: '8px 16px',
+        height: '48px',
+        margin: 'auto',
+        maxWidth: '420px',
+        width: '100%',
+      },
+      copyIcon: {
+        fontSize: '14px',
+      },
+      ctaContainer: {
+        width: '100%',
       },
       formContent: {
         backgroundColor: theme.palette.background.form + OPACITY[20],
@@ -110,25 +134,13 @@ function Zap(props: ZapProps) {
       titleContent: {
         maxWidth: mobile ? '420px' : '452px',
       },
-      ctaContainer: {
-        width: '100%',
-      },
-      doneIcon: {
-        fontSize: '14px',
-        color: theme.palette.success.main,
-      },
-      confirmTransaction: {
-        padding: '8px 16px',
-        height: '48px',
-        margin: 'auto',
-        maxWidth: '420px',
-        width: '100%',
-      },
-      copyIcon: {
-        fontSize: '14px',
-      },
     }),
-    [mobile, theme.palette.background.form, theme.palette.success.main],
+    [
+      mobile,
+      theme.palette.background.form,
+      theme.palette.success.main,
+      theme.palette.text.secondary,
+    ],
   );
 
   // --- pipeline state gathering ---
@@ -141,39 +153,53 @@ function Zap(props: ZapProps) {
     fromChain: sourceChain,
     toChain: destChain,
     route,
+    preferredRouteName,
     amount,
+    toNativeToken,
     isTransactionInProgress,
-    validations: _validations,
+    validations,
   } = useSelector((state: RootState) => ({
     ...state.transferInput,
     ...state.relay,
   }));
 
-  // Get zap assets from.transferInput store
-  const { token: sourceZapAsset, destToken: destZapAsset } = useSelector(
-    (state: RootState) => state.transferInput,
-  );
+  const { sourceToken, destToken } = useGetTokens();
   const isSameChainSwap = sourceChain === destChain;
 
-  const { sourceToken, destToken } = useGetTokens();
-
+  // --- pipeline usage ---
   const {
-    quotes,
-    isFetching: isFetchingQuotes,
+    allSupportedRoutes,
     sortedRoutes,
     sortedRoutesWithQuotes,
+    quotes,
+    failedQuotes,
+    isFetching: isFetchingQuotes,
   } = useSortedRoutesWithQuotes({
     amount,
     fromChain: sourceChain,
     toChain: destChain,
-    toNativeToken: 0,
+    preferredRouteName,
     sourceToken,
     destToken,
+    toNativeToken,
     receivingWallet,
   });
 
-  const quote = Object.values(quotes)[0];
+  const { isFetching: isFetchingSupportedDestTokens, supportedDestTokens } =
+    useComputeDestinationTokens({
+      sourceChain,
+      destChain,
+      sourceToken,
+    });
 
+  const {
+    error: txError,
+    errorInternal: txErrorInternal,
+    onConfirm,
+  } = useConfirmTransaction({ quotes });
+
+  // Set selectedRoute if the route is auto-selected
+  // After the auto-selection, we set selectedRoute when user clicks on a route in the list
   useEffect(() => {
     if (sortedRoutesWithQuotes.length === 0) {
       dispatch(setTransferRoute(''));
@@ -215,17 +241,18 @@ function Zap(props: ZapProps) {
   // Call to initiate transfer inputs validations
   useValidate();
 
-  // Get input validation result - disabled for now
-  // const _isValid = useMemo(() => isTransferValid(_validations), [_validations]);
+  // Get input validation result
+  const isValid = useMemo(() => isTransferValid(validations), [validations]);
 
-  // All supported chains for zapping functionality
-  const supportedChains = useMemo(() => {
-    return Object.keys(zappingChains)
-      .map((chainId) => getChainFromId(Number(chainId)))
-      .filter((chain): chain is Chain => chain !== undefined);
-  }, [zappingChains]);
+  // All supported chains from the given configuration and any custom override
+  const supportedChains = useMemo(
+    () => config.routes.allSupportedChains(),
+    // Disabled because we're using the global cache and we have to monitor values that aren't directly used in this hook
+    // Include config.routes to ensure updates when routes change dynamically (e.g., NTT config loading)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [config.chains, config.routes],
+  );
 
-  // Get tokens for source chain (for token selection within unified picker)
   const sourceTokens = useMemo(() => {
     if (sourceChain) {
       return config.tokens.getAllForChain(sourceChain);
@@ -236,17 +263,15 @@ function Zap(props: ZapProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sourceChain, lastTokenCacheUpdate]);
 
-  const { isFetching: isFetchingSupportedDestTokens, supportedDestTokens } =
-    useComputeDestinationTokens({
-      sourceChain,
-      destChain,
-      sourceToken,
-    });
-
   // Supported chains for the source network
-  const supportedZapChains = useMemo(() => {
-    return getZapChainConfigs(supportedChains);
-  }, [supportedChains]);
+  const supportedSourceChains = useMemo(() => {
+    return getFilteredChains(supportedChains, destChain);
+  }, [destChain, supportedChains]);
+
+  // Supported chains for the destination network
+  const supportedDestChains = useMemo(() => {
+    return getFilteredChains(supportedChains, sourceChain);
+  }, [sourceChain, supportedChains]);
 
   // Build balance requests for source and destination
   const sourceBalanceRequest = useMemo(() => {
@@ -258,7 +283,7 @@ function Zap(props: ZapProps) {
       };
     }
     return undefined;
-  }, [sourceChain, sendingWallet, sourceTokens, sourceToken]);
+  }, [sourceChain, sendingWallet, sourceTokens]);
 
   const destBalanceRequest = useMemo(() => {
     if (destChain && receivingWallet?.address) {
@@ -276,12 +301,18 @@ function Zap(props: ZapProps) {
     destination: destBalanceRequest,
   });
 
-  // TODO: Implement zap-specific amount validation
-  const amountValidation = {
-    error: undefined,
-    warning: undefined,
-    info: undefined,
-  };
+  // Validate amount
+  const amountValidation = useAmountValidation({
+    balance: sourceToken
+      ? balances.source.balances[sourceToken.key]?.balance
+      : null,
+    routes: allSupportedRoutes,
+    quotes,
+    failedQuotes,
+    tokenSymbol: sourceToken?.symbol ?? '',
+    isLoading: balances.isFetching || isFetchingQuotes,
+    disabled: !sourceChain || !sourceToken,
+  });
 
   // Handlers for source asset picker
   const handleSourceChainChange = useCallback(
@@ -292,8 +323,8 @@ function Zap(props: ZapProps) {
     [dispatch, sendingWallet],
   );
 
-  const handleSourceZapAssetChange = useCallback(
-    (value: ZapAsset) => {
+  const handleSourceTokenChange = useCallback(
+    (value: Token) => {
       dispatch(setToken(value.tuple));
     },
     [dispatch],
@@ -308,15 +339,17 @@ function Zap(props: ZapProps) {
     [dispatch, receivingWallet],
   );
 
-  const handleDestZapAssetChange = useCallback(
-    (value: ZapAsset) => {
+  const handleDestTokenChange = useCallback(
+    (value: Token) => {
       dispatch(setDestToken(value.tuple));
     },
     [dispatch],
   );
 
-  const destQuoteResult = quote?.success ? quote : undefined;
+  // Quote result for destination picker
+  const destQuoteResult = quotes && route ? quotes[route] : undefined;
 
+  // Handler for history toggle
   const handleHistoryToggle = useCallback(() => {
     setShowHistory((value) => !value);
     config.triggerEvent({
@@ -330,6 +363,15 @@ function Zap(props: ZapProps) {
   const isTxHistoryDisabled =
     !sendingWallet?.address || isTransactionInProgress;
 
+  // Handler for route change
+  const handleRouteChange = useCallback(
+    (r: string) => {
+      dispatch(setTransferRoute(r));
+    },
+    [dispatch],
+  );
+
+  // Determine which wallet connector to show
   const walletConnectorProps = useMemo(() => {
     if (sendingWallet?.address && receivingWallet?.address) {
       return null;
@@ -353,19 +395,13 @@ function Zap(props: ZapProps) {
     sourceChain,
   ]);
 
-  const { isCompatible: _isWalletCompatible } = useWalletCompatibility({
+  const { isCompatible: isWalletCompatible } = useWalletCompatibility({
     sendingWallet,
     receivingWallet,
     sourceChain,
     destChain,
-    routes: quote ? ['zap'] : [],
+    routes: sortedRoutes,
   });
-
-  const {
-    error: txError,
-    errorInternal: txErrorInternal,
-    onConfirm,
-  } = useConfirmTransaction({ quotes });
 
   const transactionError = useMemo(() => {
     if (!txError) {
@@ -410,25 +446,15 @@ function Zap(props: ZapProps) {
 
   const hasConnectedWallets = sendingWallet.address && receivingWallet.address;
 
-  const confirmButtonTooltip =
-    !sourceChain || !sourceZapAsset
-      ? 'Please select a source asset'
-      : !destChain || !destZapAsset
-      ? 'Please select a destination asset'
-      : !hasEnteredAmount
-      ? 'Please enter an amount'
-      : isFetchingQuotes
-      ? 'Loading quotes...'
-      : !route
-      ? 'Please select a quote'
-      : '';
   const confirmTransactionDisabled =
     !sourceChain ||
     !sourceToken ||
     !destChain ||
     !destToken ||
     !hasConnectedWallets ||
+    !isWalletCompatible ||
     !route ||
+    !isValid ||
     isFetchingQuotes ||
     !hasEnteredAmount ||
     isTransactionInProgress ||
@@ -442,7 +468,7 @@ function Zap(props: ZapProps) {
         data-testid="confirm-transaction-button"
         variant="primary"
         styleOverrides={styles.confirmTransaction}
-        onClick={onConfirm}
+        onClick={() => onConfirm()}
       >
         {isTransactionInProgress ? (
           <Typography
@@ -475,7 +501,21 @@ function Zap(props: ZapProps) {
     isTransactionInProgress,
     mobile,
     isFetchingQuotes,
+    onConfirm,
   ]);
+
+  const confirmButtonTooltip =
+    !sourceChain || !sourceToken
+      ? 'Please select a source asset'
+      : !destChain || !destToken
+      ? 'Please select a destination asset'
+      : !hasEnteredAmount
+      ? 'Please enter an amount'
+      : isFetchingQuotes
+      ? 'Loading quotes...'
+      : !route
+      ? 'Please select a quote'
+      : '';
 
   const bridgeContent = (
     <>
@@ -484,11 +524,11 @@ function Zap(props: ZapProps) {
         <Box ref={popoverAnchorRef}>
           <AssetPicker
             chain={sourceChain}
-            chainList={supportedZapChains}
+            chainList={supportedSourceChains}
             token={sourceToken}
             tokenList={sourceTokens}
             setChain={handleSourceChainChange}
-            setToken={handleSourceZapAssetChange}
+            setToken={handleSourceTokenChange}
             wallet={sendingWallet}
             isSameChainSwap={isSameChainSwap}
             isSource={true}
@@ -506,14 +546,16 @@ function Zap(props: ZapProps) {
         {/* Destination asset picker */}
         <AssetPicker
           chain={destChain}
-          chainList={supportedZapChains}
+          chainList={supportedDestChains}
           token={destToken}
           sourceToken={sourceToken}
           tokenList={supportedDestTokens}
           isFetchingQuotes={isFetchingQuotes}
-          isFetchingTokens={isFetchingSupportedDestTokens}
+          isFetchingTokens={
+            supportedDestTokens.length === 0 && isFetchingSupportedDestTokens
+          }
           setChain={handleDestChainChange}
-          setToken={handleDestZapAssetChange}
+          setToken={handleDestTokenChange}
           wallet={receivingWallet}
           isSameChainSwap={isSameChainSwap}
           isSource={false}
@@ -542,31 +584,27 @@ function Zap(props: ZapProps) {
 
   const iconTooltip =
     (!sendingWallet?.address && 'No connected wallets found') ||
-    (showHistory ? 'Show zap' : 'Show history');
+    (showHistory ? 'Show bridge' : 'Show history');
 
   return (
-    <Box sx={{ ...styles.zapContent }} data-testid="zap-view">
+    <Box sx={{ ...styles.bridgeContent }} data-testid="bridge-view">
       <Box sx={styles.titleContent}>
         <ConfigurablePageHeader />
         {config.ui.showInProgressWidget && (
-          // <ZapTxHistoryWidget
-          //   transactions={[]} // TODO: Get actual Zap transactions
-          //   disabled={isTxHistoryDisabled}
-          // />
-          <></>
+          <TxHistoryWidget disabled={isTransactionInProgress} />
         )}
-        <Box sx={styles.zapHeader}>
+        <Box sx={styles.bridgeHeader}>
           <Header
             align="left"
-            text={config.ui.title ?? 'Wormhole Zap'}
+            text={config.ui.title ?? 'Wormhole Connect'}
             size={18}
-            testId="zap-view-header"
+            testId="bridge-view-header"
           />
           <Tooltip title={iconTooltip}>
             <span>
               <IconButton
                 data-testid="history-button"
-                aria-label={showHistory ? 'Show zap' : 'Show history'}
+                aria-label={showHistory ? 'Show bridge' : 'Show history'}
                 sx={{
                   backgroundColor: theme.palette.background.form + OPACITY[20],
                   padding: '12px',
@@ -588,19 +626,20 @@ function Zap(props: ZapProps) {
           </Tooltip>
         </Box>
       </Box>
+
       <Box
         sx={
           mobile ? { ...styles.formContentMobile } : { ...styles.formContent }
         }
       >
-        {showHistory ? <TxHistory /> : <>{bridgeContent}</>}
+        {showHistory ? <TxHistory /> : bridgeContent}
       </Box>
       {hasEnteredAmount && !showHistory && (
         <Box sx={{ marginTop: '12px', width: '100%' }}>
           <Routes
             routes={sortedRoutes}
             selectedRoute={route}
-            onRouteChange={() => {}}
+            onRouteChange={handleRouteChange}
             quotes={quotes}
             isLoading={isFetchingQuotes}
           />

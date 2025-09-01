@@ -308,35 +308,6 @@ export interface TransactionLocal {
   isReadyToClaim?: boolean;
 }
 
-// Zap Transaction types
-export interface ZapTransaction {
-  txHash: string;
-  amount: string;
-  amountUsd?: string;
-  fromChain: Chain;
-  fromToken?: Token;
-  toChain: Chain;
-  toToken?: Token;
-  receiveAmount: string;
-  senderTimestamp: number;
-  explorerLink?: string;
-  zapRoute?: string;
-  status: 'pending' | 'completed' | 'failed';
-}
-
-export interface ZapTransactionLocal {
-  txHash: string;
-  amount: string;
-  fromChain: Chain;
-  fromToken?: Token;
-  toChain: Chain;
-  toToken?: Token;
-  receiveAmount: string;
-  timestamp: number;
-  route?: string;
-  status: 'pending' | 'completed' | 'failed';
-}
-
 export interface TransactionSettings {
   Solana?: {
     priorityFee?: PriorityFeeOptions;
