@@ -1,6 +1,5 @@
 import type { HexString } from '@dzapio/sdk';
 import { DZapClient } from '@dzapio/sdk';
-import type { Chain } from '@wormhole-foundation/sdk';
 import config from 'config';
 import {
   type ZapAsset,
@@ -15,12 +14,9 @@ import React, {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useState,
   type ReactNode,
 } from 'react';
-import { useDispatch } from 'react-redux';
-import { setZappingChains, setZappingProviders } from 'store/transferInput';
 import { getChainFromId } from 'utils/chainMapping';
 import { cacheZapPools, cacheZapPositions } from 'utils/zapAssetCache';
 
@@ -47,9 +43,6 @@ interface ZapContextType {
   getZapPoolDetails: (
     request: ZapPoolDetailsRequest,
   ) => Promise<ZapPoolDetails>;
-
-  getSupportedChains: () => Promise<Chain[]>;
-  getSupportedProviders: () => Promise<string[]>;
   sdk: DZapClient;
 }
 
@@ -65,8 +58,6 @@ export const ZapProvider: React.FC<ZapProviderProps> = ({ children }) => {
   const [lastZapAssetCacheUpdate, setLastZapAssetCacheUpdate] = useState(
     config.zapAssets.lastUpdate,
   );
-
-  const dispatch = useDispatch();
   const sdk = DZapClient.getInstance();
 
   const getZapPositions = useCallback(
@@ -101,28 +92,6 @@ export const ZapProvider: React.FC<ZapProviderProps> = ({ children }) => {
     },
     [sdk],
   );
-
-  const getSupportedChains = useCallback(async (): Promise<Chain[]> => {
-    try {
-      const response = await sdk.getZapChains();
-      dispatch(setZappingChains(response));
-      return response;
-    } catch (error) {
-      console.error('Error fetching supported chains:', error);
-      return [];
-    }
-  }, [sdk, dispatch]);
-
-  const getSupportedProviders = useCallback(async (): Promise<string[]> => {
-    try {
-      const response = await sdk.getZapProviders();
-      dispatch(setZappingProviders(response));
-      return response;
-    } catch (error) {
-      console.error('Error fetching supported providers:', error);
-      return [];
-    }
-  }, [sdk, dispatch]);
 
   // Cache-first pool fetching (following TokensContext pattern)
   const getOrFetchPools = useCallback(
@@ -246,11 +215,6 @@ export const ZapProvider: React.FC<ZapProviderProps> = ({ children }) => {
     [getZapPositions],
   );
 
-  useEffect(() => {
-    getSupportedProviders();
-    getSupportedChains();
-  }, [getSupportedProviders, getSupportedChains]);
-
   return (
     <ZapContext.Provider
       value={{
@@ -266,8 +230,6 @@ export const ZapProvider: React.FC<ZapProviderProps> = ({ children }) => {
         getZapPositions,
         getZapPools,
         getZapPoolDetails,
-        getSupportedChains,
-        getSupportedProviders,
         sdk,
       }}
     >

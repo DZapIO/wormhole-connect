@@ -29,8 +29,8 @@ import type { Balances } from 'utils/wallet/types';
 import { getDefaultProvider, getZapPoolAmountUSD } from 'utils/zap';
 import WalletController from 'views/v3/Bridge/WalletConnector/Controller';
 import AmountInput from 'views/v3/Bridge/AmountInput';
-import AssetPickerDrawer from 'views/v3/Zap/AssetPicker/PickerBottomSheet';
-import AssetPickerPopover from 'views/v3/Zap/AssetPicker/PickerModal';
+import AssetPickerDrawer from 'views/v3/Bridge/AssetPicker/PickerBottomSheet';
+import AssetPickerPopover from 'views/v3/Bridge/AssetPicker/PickerModal';
 
 type Props = {
   chain?: Chain | undefined;
@@ -63,7 +63,6 @@ function AssetPicker(props: Props) {
     amount,
     token: zapToken,
     fromChain,
-    zappingChains,
   } = useSelector((state: RootState) => state.transferInput);
   const { getTokenPrice } = useTokens();
 
@@ -171,10 +170,8 @@ function AssetPicker(props: Props) {
 
   // Update selected provider when chain changes
   useEffect(() => {
-    setSelectedProvider((prev) =>
-      getDefaultProvider(zappingChains, chainConfig, prev),
-    );
-  }, [chainConfig, zappingChains]);
+    setSelectedProvider((prev) => getDefaultProvider(chainConfig, prev));
+  }, [chainConfig]);
 
   const selection = useMemo(() => {
     const tokenDisplay = props.token ? <>{props.token.display}</> : <>Select</>;
@@ -590,6 +587,7 @@ function AssetPicker(props: Props) {
             handleTokenSelect(token);
             setIsDrawerOpen(false);
           }}
+          showTabs={true}
         />
       ) : (
         <AssetPickerPopover
@@ -620,6 +618,7 @@ function AssetPicker(props: Props) {
             handleTokenSelect(token);
             popupState.close();
           }}
+          showTabs={true}
         />
       )}
     </Box>

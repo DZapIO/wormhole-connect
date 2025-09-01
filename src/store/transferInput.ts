@@ -4,7 +4,6 @@ import type { Chain } from '@wormhole-foundation/sdk';
 import { amount } from '@wormhole-foundation/sdk';
 import config from 'config';
 import type { TokenTuple } from 'config/tokens';
-import { type ZapChains, type ZapProviders } from 'config/zapAsset';
 import {
   findTokenByAddressOrSymbol,
   findTokenBySymbol,
@@ -53,8 +52,6 @@ export interface TransferInputState {
   };
   isTransactionInProgress: boolean;
   receiverNativeBalance: string | undefined;
-  providers: ZapProviders;
-  zappingChains: ZapChains;
 }
 
 // This is a function because config might have changed since we last cleared this store
@@ -99,8 +96,6 @@ function getInitialState(): TransferInputState {
     },
     isTransactionInProgress: false,
     receiverNativeBalance: '',
-    providers: {},
-    zappingChains: {},
   };
 }
 
@@ -259,12 +254,6 @@ export const transferInputSlice = createSlice({
       performModificationsIfFromChainChanged(state);
       performModificationsIfToChainChanged(state);
     },
-    setZappingProviders: (state, { payload }: PayloadAction<ZapProviders>) => {
-      state.providers = payload;
-    },
-    setZappingChains: (state, { payload }: PayloadAction<ZapChains>) => {
-      state.zappingChains = payload;
-    },
   },
 });
 
@@ -330,8 +319,6 @@ export const {
   clearTransfer,
   setIsTransactionInProgress,
   swapInputs,
-  setZappingProviders,
-  setZappingChains,
 } = transferInputSlice.actions;
 
 export default transferInputSlice.reducer;

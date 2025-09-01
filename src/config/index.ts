@@ -163,6 +163,7 @@ export function buildConfig(
     tokens,
     tokenWhitelist: customConfig.tokens,
     zapAssets,
+    protocols: customConfig.protocols || networkData.protocols || {},
 
     routes: new ZapOperator(customConfig.routes),
 

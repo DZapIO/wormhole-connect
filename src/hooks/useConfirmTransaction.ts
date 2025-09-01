@@ -3,14 +3,14 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import config from 'config';
 import { RouteContext } from 'contexts/RouteContext';
-import { useUSDamountGetter } from 'hooks/useUSDamountGetter';
 import useWalletProvider from 'hooks/useWalletProvider';
-import { SDKv2Signer } from 'routes/sdkv2/signer';
+import { useUSDamountGetter } from 'hooks/useUSDamountGetter';
+import { useGetTokens } from 'hooks/useGetTokens';
 import {
-  setRoute as setRedeemRoute,
-  setSendTx,
-  setTimestamp,
   setTxDetails,
+  setSendTx,
+  setRoute as setRedeemRoute,
+  setTimestamp,
 } from 'store/redeem';
 import { setRoute as setAppRoute } from 'store/router';
 import { setAmount, setIsTransactionInProgress } from 'store/transferInput';
@@ -19,14 +19,14 @@ import { ERR_USER_REJECTED } from 'telemetry/types';
 import { toDecimals } from 'utils/balance';
 import { interpretTransferError } from 'utils/errors';
 import { addTxToLocalStorage } from 'utils/inProgressTxCache';
-import { isTransferValid, validate } from 'utils/transferValidation';
+import { validate, isTransferValid } from 'utils/transferValidation';
+import { SDKv2Signer } from 'routes/sdkv2/signer';
 import { TransferWallet } from 'utils/wallet';
 
-import type { QuoteResult } from 'routes/operator';
 import type { RootState } from 'store';
 import type { RelayerFee } from 'store/relay';
+import type { QuoteResult } from 'routes/operator';
 import { clearCache as clearBalanceCache } from 'utils/balanceCache';
-import { useGetTokens } from './useGetTokens';
 
 type Props = {
   quotes: Record<string, QuoteResult | undefined>;

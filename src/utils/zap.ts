@@ -1,4 +1,4 @@
-import type { ZapChains, ZapQuoteResponse } from '@dzapio/sdk';
+import type { ZapQuoteResponse } from '@dzapio/sdk';
 import type { Chain } from '@wormhole-foundation/sdk';
 import type { ChainConfig } from 'config';
 import config from 'config';
@@ -19,19 +19,25 @@ export function getZapChainConfigs(
 }
 
 export const getDefaultProvider = (
-  zappingChains: ZapChains,
   chainConfig?: ChainConfig,
   prevProvider?: string | undefined,
 ) => {
   const chainId = chainConfig ? getChainId(chainConfig.sdkName) : undefined;
+  const protocols = Object.values(config.protocols);
   console.log(chainId);
   const supportedProviders = chainId
-    ? zappingChains[chainId]?.supportedProviders
+    ? protocols.filter((protocol) =>
+        protocol.supportedChainIds.includes(chainId),
+      )
     : undefined;
-  if (prevProvider && supportedProviders?.includes(prevProvider)) {
+
+  if (
+    prevProvider &&
+    supportedProviders?.some((protocol) => protocol.id === prevProvider)
+  ) {
     return prevProvider;
   }
-  return supportedProviders?.[0] || undefined;
+  return supportedProviders?.[0]?.id || undefined;
 };
 
 export const getZapPoolAmountUSD = (quote: ZapQuoteResponse | undefined) => {

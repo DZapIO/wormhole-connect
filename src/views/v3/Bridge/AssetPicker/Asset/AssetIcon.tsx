@@ -8,7 +8,7 @@ interface Props {
   fallbackSymbol?: string;
 }
 
-const PoolIcon = ({
+const AssetIcon = ({
   underlyingAssets,
   size = 36,
   fallbackSymbol = 'P',
@@ -103,4 +103,4 @@ const PoolIcon = ({
   );
 };
 
-export default PoolIcon;
+export default AssetIcon;
