@@ -8,12 +8,10 @@ import { useTheme } from '@mui/material/styles';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import React, { useMemo, useState } from 'react';
-import { useSelector } from 'react-redux';
 
-import type { ProviderDetails } from '@dzapio/sdk';
-import type { ChainConfig } from 'config/types';
+import config from 'config';
+import type { ChainConfig, ProtocolConfig } from 'config/types';
 import PlusIcon from 'icons/Plus';
-import type { RootState } from 'store';
 import { getChainId } from 'utils/chainMapping';
 import SearchableList from 'views/v3/Bridge/AssetPicker/SearchableList';
 
@@ -30,9 +28,10 @@ const SHORT_LIST_SIZE = 7;
 function ProtocolList(props: Props) {
   const theme = useTheme();
   const [providerSearchQuery, setProviderSearchQuery] = useState('');
-  const { providers, zappingChains } = useSelector(
-    (state: RootState) => state.transferInput,
-  );
+
+  const providers = useMemo(() => {
+    return config.protocols;
+  }, [config]);
 
   const styles = useMemo(
     () => ({
@@ -128,16 +127,10 @@ function ProtocolList(props: Props) {
 
     const chainId = getChainId(props.selectedChainConfig.sdkName);
     if (!chainId) return [];
-
-    // Convert chainId to string since zappingChains keys are string chain IDs
-    const chainIdKey = chainId.toString();
-
-    return (
-      zappingChains[chainIdKey]?.supportedProviders
-        ?.map((provider: string) => providers[provider])
-        ?.filter((provider) => provider !== undefined) || []
+    return Object.values(providers).filter((provider) =>
+      provider.supportedChainIds.includes(chainId),
     );
-  }, [props.selectedChainConfig, zappingChains, providers]);
+  }, [props.selectedChainConfig, providers]);
 
   // Convert supported protocols to array for easier manipulation
   const providerList = useMemo(() => {
@@ -234,7 +227,7 @@ function ProtocolList(props: Props) {
 
   const searchList = useMemo(
     () => (
-      <SearchableList<ProviderDetails>
+      <SearchableList<ProtocolConfig>
         searchPlaceholder="Search for a provider"
         sx={styles.chainSearch}
         items={providerList ?? []}
@@ -282,6 +275,19 @@ function ProtocolList(props: Props) {
       setShowSearch,
     ],
   );
+
+  if (providerList.length === 0) {
+    return (
+      <Typography
+        fontSize="14px"
+        color="text.secondary"
+        textAlign="center"
+        sx={{ py: 2 }}
+      >
+        No providers available for this chain
+      </Typography>
+    );
+  }
 
   if (topProviders.length < 2) {
     return null;

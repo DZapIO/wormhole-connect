@@ -20,7 +20,6 @@ export type {
   ZapPoolsRequest,
   ZapPosition,
   ZapPositionsRequest,
-  ZapProviders,
 } from '@dzapio/sdk';
 
 export type ZapTokenInfo = {

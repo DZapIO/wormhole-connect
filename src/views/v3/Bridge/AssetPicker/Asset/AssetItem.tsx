@@ -1,19 +1,20 @@
 import { Box, ListItemButton, Typography, useTheme } from '@mui/material';
 import type { Chain } from '@wormhole-foundation/sdk';
-import type { ZapAsset } from 'config/zapAsset';
+import { isZapPosition, type ZapAsset } from 'config/zapAsset';
 import React from 'react';
 import { displayAddress } from 'utils';
-import PoolIcon from '../pool/PoolIcon';
+import AssetIcon from './AssetIcon';
 
 interface Props {
-  position: ZapAsset;
+  asset: ZapAsset;
   chain: Chain;
   onClick: () => void;
   isSelected: boolean;
 }
 
-const PositionItem = ({ position, chain, onClick, isSelected }: Props) => {
+const AssetItem = ({ asset, chain, onClick, isSelected }: Props) => {
   const theme = useTheme();
+  const isPosition = isZapPosition(asset.tuple);
 
   const styles = {
     container: {
@@ -27,19 +28,19 @@ const PositionItem = ({ position, chain, onClick, isSelected }: Props) => {
         border: `1px solid ${theme.palette.primary.main}`,
       }),
     },
-    positionInfo: {
+    assetInfo: {
       display: 'flex',
       alignItems: 'center',
       gap: '12px',
       width: '100%',
     },
-    positionDetails: {
+    assetDetails: {
       display: 'flex',
       flexDirection: 'column' as const,
       flex: 1,
       minWidth: 0,
     },
-    positionName: {
+    assetName: {
       fontSize: '14px',
       fontWeight: 500,
       color: theme.palette.text.primary,
@@ -47,20 +48,20 @@ const PositionItem = ({ position, chain, onClick, isSelected }: Props) => {
       textOverflow: 'ellipsis',
       whiteSpace: 'nowrap' as const,
     },
-    positionSymbol: {
+    assetAddress: {
       fontSize: '12px',
       color: theme.palette.text.secondary,
       overflow: 'hidden',
       textOverflow: 'ellipsis',
       whiteSpace: 'nowrap' as const,
     },
-    positionStats: {
+    assetStats: {
       display: 'flex',
       flexDirection: 'column' as const,
       alignItems: 'flex-end',
       gap: '2px',
     },
-    amountUsd: {
+    primaryStat: {
       fontSize: '12px',
       color: theme.palette.text.secondary,
     },
@@ -70,32 +71,39 @@ const PositionItem = ({ position, chain, onClick, isSelected }: Props) => {
       fontWeight: 500,
     },
   };
+  // Get the primary stat (TVL for pools, amount USD for positions)
+  const getPrimaryStat = () => {
+    if (isPosition && asset.zapPositionDetails?.amountUSD) {
+      return `$${Number(asset.zapPositionDetails.amountUSD).toLocaleString()}`;
+    }
+    if (!isPosition && asset.zapTokenInfo?.tvl) {
+      return `TVL: $${Number(asset.zapTokenInfo.tvl).toLocaleString()}`;
+    }
+    return null;
+  };
 
   return (
     <ListItemButton sx={styles.container} onClick={onClick} dense>
-      <Box sx={styles.positionInfo}>
-        <PoolIcon
-          underlyingAssets={position.zapTokenInfo?.underlyingAssets}
-          fallbackSymbol={position.name?.charAt(0) || 'P'}
+      <Box sx={styles.assetInfo}>
+        <AssetIcon
+          underlyingAssets={asset.zapTokenInfo?.underlyingAssets}
           size={36}
         />
 
-        <Box sx={styles.positionDetails}>
-          <Typography sx={styles.positionName}>{position.name}</Typography>
-          <Typography sx={styles.positionSymbol}>
-            {displayAddress(chain, position.address?.toString())}
+        <Box sx={styles.assetDetails}>
+          <Typography sx={styles.assetName}>{asset.name}</Typography>
+          <Typography sx={styles.assetAddress}>
+            {displayAddress(chain, asset.address?.toString() || '')}
           </Typography>
         </Box>
 
-        <Box sx={styles.positionStats}>
-          {position.zapPositionDetails?.amountUSD && (
-            <Typography sx={styles.amountUsd}>
-              ${Number(position.zapPositionDetails?.amountUSD).toLocaleString()}
-            </Typography>
+        <Box sx={styles.assetStats}>
+          {getPrimaryStat() && (
+            <Typography sx={styles.primaryStat}>{getPrimaryStat()}</Typography>
           )}
-          {position.zapTokenInfo?.apr && (
+          {asset.zapTokenInfo?.apr && (
             <Typography sx={styles.apy}>
-              {Number(position.zapTokenInfo?.apr).toFixed(2)}% APY
+              {Number(asset.zapTokenInfo.apr).toFixed(2)}% APY
             </Typography>
           )}
         </Box>
@@ -104,4 +112,4 @@ const PositionItem = ({ position, chain, onClick, isSelected }: Props) => {
   );
 };
 
-export default PositionItem;
+export default AssetItem;

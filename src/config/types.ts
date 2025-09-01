@@ -118,6 +118,8 @@ export interface WormholeConnectConfig {
   tokens?: (string | TokenTuple)[];
   routes?: routes.RouteConstructor<any>[];
 
+  protocols?: ProtocolsConfig;
+
   // Custom tokens
   tokensConfig?: TokensConfig;
 
@@ -179,6 +181,7 @@ export interface InternalConfig<N extends Network> {
   tokens: TokenCache;
   tokenWhitelist?: (string | TokenTuple)[];
   zapAssets: ZapAssetCache;
+  protocols: ProtocolsConfig;
 
   chains: ChainsConfig;
   chainsArr: ChainConfig[];
@@ -245,6 +248,17 @@ export type ChainsConfig = {
   [chain in Chain]?: ChainConfig;
 };
 
+export type ProtocolConfig = {
+  id: string;
+  name: string;
+  icon: string;
+  supportedChainIds: number[];
+};
+
+export type ProtocolsConfig = {
+  [protocol: string]: ProtocolConfig;
+};
+
 export type RpcMapping = { [chain in Chain]?: string };
 
 export type GuardianSetData = {
@@ -258,6 +272,7 @@ export type NetworkData = {
   wrappedTokens: WrappedTokenAddresses;
   rpcs: RpcMapping;
   guardianSet: GuardianSetData;
+  protocols?: ProtocolsConfig;
 };
 
 export type WrappedTokenAddresses = {
