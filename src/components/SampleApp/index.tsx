@@ -40,7 +40,7 @@ import {
   MayanRouteSWIFT,
   MayanRouteMONOCHAIN,
 } from '../../routes/mayan';
-import { DZapRoute } from '../../routes/dZap';
+import { DZapRoute } from '../../routes/zap/providers/dZap';
 import { NTT_TEST_CONFIG_TESTNET, NTT_TEST_CONFIG_MAINNET } from './consts';
 import { DEFAULT_ROUTES } from 'routes/operator';
 import { nttRoutes } from 'exports/ntt';

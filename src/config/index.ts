@@ -1,34 +1,36 @@
 import { CONFIG as LEGACY_CONFIG } from 'sdklegacy';
+import DEVNET from './devnet';
+import { wrapEventHandler } from './events';
 import MAINNET from './mainnet';
 import TESTNET from './testnet';
-import DEVNET from './devnet';
-import type { WormholeConnectConfig } from './types';
-import type { InternalConfig } from './types';
-import { mergeCustomWrappedTokens, validateDefaults } from './utils';
-import { wrapEventHandler } from './events';
-import { capitalize } from './utils';
+import type { InternalConfig, WormholeConnectConfig } from './types';
+import {
+  capitalize,
+  mergeCustomWrappedTokens,
+  validateDefaults,
+} from './utils';
 
 export * from './types';
 
 import type {
-  Wormhole as WormholeV2,
-  Network,
-  Token as SDKToken,
-  ChainTokens as SDKChainTokens,
-  WormholeConfigOverrides as WormholeConfigOverridesV2,
   Chain,
+  Network,
+  ChainTokens as SDKChainTokens,
+  Token as SDKToken,
+  WormholeConfigOverrides as WormholeConfigOverridesV2,
+  Wormhole as WormholeV2,
 } from '@wormhole-foundation/sdk';
 import { wormhole as getWormholeV2 } from '@wormhole-foundation/sdk';
 
 import '@wormhole-foundation/sdk/addresses';
+import aptos from '@wormhole-foundation/sdk/aptos';
 import evm from '@wormhole-foundation/sdk/evm';
 import solana from '@wormhole-foundation/sdk/solana';
-import aptos from '@wormhole-foundation/sdk/aptos';
 import sui from '@wormhole-foundation/sdk/sui';
-import RouteOperator from 'routes/operator';
+import { ZapOperator } from 'routes/zap';
 import { CHAIN_ORDER } from './constants';
-import { createUiConfig } from './ui';
 import { buildTokenCache } from './tokens';
+import { createUiConfig } from './ui';
 import { buildZapAssetCache } from './zapAsset';
 
 export function buildConfig(
@@ -162,7 +164,7 @@ export function buildConfig(
     tokenWhitelist: customConfig.tokens,
     zapAssets,
 
-    routes: new RouteOperator(customConfig.routes),
+    routes: new ZapOperator(customConfig.routes),
 
     // UI details
     ui: createUiConfig({ ...customConfig.ui }),

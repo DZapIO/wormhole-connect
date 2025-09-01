@@ -8,7 +8,7 @@ import type { Chain, TokenId, TransactionId } from '@wormhole-foundation/sdk';
 import { routes, amount as sdkAmount } from '@wormhole-foundation/sdk';
 
 import { isZapAssetId } from 'config/zapAsset';
-import { DZapRoute } from './dZap';
+import { DZapRoute } from './zap/providers/dZap';
 import SDKv2Route from './sdkv2';
 
 export interface TxInfo {

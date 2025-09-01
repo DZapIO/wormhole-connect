@@ -1,16 +1,32 @@
 import type {
   HexString,
+  ZapPool,
+  ZapPoolsRequest,
+  ZapPosition,
+  ZapPositionsRequest,
+  ZapQuoteResponse,
+} from '@dzapio/sdk';
+import type { Chain, Network } from '@wormhole-foundation/sdk-connect';
+import { amount } from '@wormhole-foundation/sdk-connect';
+import type {
+  ZapPoolData,
+  ZapPositionData,
+  ZapProvider,
+} from 'routes/zap/types';
+import {
+  ZapNetworkError,
+  ZapProviderError,
+  ZapRateLimitError,
+} from 'routes/zap/types';
+import type {
   ZapBuildTxnRequest,
   ZapBuildTxnResponse,
   ZapQuoteRequest,
-  ZapQuoteResponse,
 } from '@dzapio/sdk';
 import { DZapClient } from '@dzapio/sdk';
 import type {
-  Chain,
   ChainAddress,
   ChainContext,
-  Network,
   Signer,
   SourceInitiatedTransferReceipt,
   TokenId,
@@ -18,7 +34,6 @@ import type {
 } from '@wormhole-foundation/sdk-connect';
 import {
   TransferState,
-  amount,
   canonicalAddress,
   isAttested,
   isCompleted,
@@ -39,7 +54,7 @@ import {
 } from '@wormhole-foundation/sdk-evm';
 import axios from 'axios';
 import { getChainId } from 'utils/chainMapping';
-import { getAllZapTokenIdsForChain } from '../../utils/tokenHelpers';
+import { getAllZapTokenIdsForChain } from '../../../../utils/tokenHelpers';
 import {
   getNativeContractAddress,
   getTransactionStatus,
@@ -48,6 +63,9 @@ import {
   supportedChains,
   txStatusToReceipt,
 } from './utils';
+
+type PoolD = ZapPool;
+type PosD = ZapPosition;
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace DZapRoute {
@@ -72,18 +90,20 @@ type R = routes.Receipt;
 type Tp = routes.TransferParams<Op>;
 type Vr = routes.ValidationResult<Op>;
 
-class DZapRouteBase<N extends Network> extends routes.AutomaticRoute<
-  N,
-  Op,
-  Vp,
-  R
-> {
+export class DZapRoute<N extends Network>
+  extends routes.AutomaticRoute<N, Op, Vp, R>
+  implements ZapProvider<PoolD, PosD>
+{
+  static readonly meta = {
+    name: 'DZap',
+    provider: 'DZap',
+  };
   MAX_SLIPPAGE = 1;
 
   static NATIVE_GAS_DROPOFF_SUPPORTED = false;
   static override IS_AUTOMATIC = true;
 
-  private sdk = DZapClient.getInstance();
+  protected sdk = DZapClient.getInstance();
 
   protected isTestnetRequest(request: routes.RouteTransferRequest<N>): boolean {
     // A request is considered testnet if either the source or destination chain is on testnet
@@ -499,17 +519,168 @@ class DZapRouteBase<N extends Network> extends routes.AutomaticRoute<
 
     return receipt;
   }
-}
-
-export class DZapRoute<N extends Network>
-  extends DZapRouteBase<N>
-  implements routes.StaticRouteMethods<typeof DZapRoute>
-{
-  static meta = {
-    name: 'DZap',
-    provider: 'DZap',
-  };
   static supportsSameChainSwaps(network: Network, chain: Chain) {
     return true;
+  }
+
+  isSupportedProvider(provider: string, chain: Chain): boolean {
+    // TODO: Implement
+    return true;
+  }
+
+  async getPools(
+    chain: Chain,
+    provider: string,
+    limit?: number,
+  ): Promise<ZapPoolData<PoolD>[]> {
+    try {
+      const chainId = getChainId(chain);
+      if (!chainId) {
+        throw new ZapProviderError(`Unsupported chain: ${chain}`);
+      }
+
+      const request: ZapPoolsRequest = {
+        chainId,
+        provider,
+        limit: limit || 100,
+      };
+
+      const pools = await this.sdk.getZapPools(request);
+      return pools.map((pool) => this.mapZapPoolToPoolData(pool, chain));
+    } catch (error) {
+      this.handleError(error, 'getPools');
+    }
+  }
+
+  async getPositions(
+    chain: Chain,
+    provider: string,
+    userAddress: string,
+    limit?: number,
+  ): Promise<ZapPositionData<PosD>[]> {
+    try {
+      const chainId = getChainId(chain);
+      if (!chainId) {
+        throw new ZapProviderError(`Unsupported chain: ${chain}`);
+      }
+
+      const request: ZapPositionsRequest = {
+        chainId,
+        provider,
+        account: userAddress as HexString,
+      };
+
+      const positions = await this.sdk.getZapPositions(request);
+      return positions.map(this.mapZapPositionToPositionData);
+    } catch (error) {
+      this.handleError(error, 'getPositions');
+    }
+  }
+
+  /**
+   * Map dZap SDK ZapPool to our ZapPoolData format
+   */
+  private mapZapPoolToPoolData = (
+    pool: ZapPool,
+    chain: Chain,
+  ): ZapPoolData<PoolD> => {
+    return {
+      address: pool.address,
+      name: pool.name,
+      symbol: pool.symbol,
+      provider: pool.provider,
+      chain: chain,
+      apr: pool.apr,
+      tvl: pool.tvl ? parseFloat(pool.tvl) : undefined,
+      decimals: pool.decimals,
+      logo: pool.underlyingAssets?.[0]?.logo,
+      details: pool,
+    };
+  };
+
+  /**
+   * Map dZap SDK ZapPosition to our ZapPositionData format
+   */
+  private mapZapPositionToPositionData = (
+    position: ZapPosition,
+    account: HexString,
+    chain: Chain,
+  ): ZapPositionData<PosD> => {
+    return {
+      address: position.address,
+      name: position.name,
+      symbol: position.name,
+      provider: position.provider,
+      chain: chain,
+      decimals: position.decimals,
+      userAddress: account,
+      amount: amount.fromBaseUnits(
+        BigInt(position.amount || '0'),
+        position.decimals,
+      ),
+      logo: position.underlyingAssets?.[0]?.logo || '',
+      amountUSD: position.amountUSD
+        ? parseFloat(position.amountUSD)
+        : undefined,
+      details: position,
+    };
+  };
+
+  /**
+   * Handle errors from dZap SDK calls
+   */
+  private handleError(error: any, operation: string): never {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status || 500;
+      const data = error.response?.data;
+
+      if (status === 429) {
+        const retryAfter = error.response?.headers['retry-after'];
+        throw new ZapRateLimitError(
+          `Rate limit exceeded for dZap ${operation}`,
+          retryAfter ? parseInt(retryAfter) : undefined,
+        );
+      }
+
+      if (status >= 500) {
+        throw new ZapNetworkError(
+          `Server error from dZap ${operation}: ${
+            data?.message || error.message
+          }`,
+          error,
+        );
+      }
+
+      if (status >= 400) {
+        throw new ZapProviderError(
+          `Client error from dZap ${operation}: ${
+            data?.message || error.message
+          }`,
+          error,
+        );
+      }
+
+      // Network/connection errors
+      throw new ZapNetworkError(
+        `Network error for dZap ${operation}: ${error.message}`,
+        error,
+      );
+    }
+
+    // Non-axios errors
+    if (
+      error instanceof ZapProviderError ||
+      error instanceof ZapNetworkError ||
+      error instanceof ZapRateLimitError
+    ) {
+      throw error;
+    }
+
+    throw new ZapProviderError(
+      `Unknown error in dZap ${operation}: ${
+        error instanceof Error ? error.message : 'Unknown error'
+      }`,
+      error instanceof Error ? error : undefined,
+    );
   }
 }
