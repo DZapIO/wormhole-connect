@@ -1,5 +1,8 @@
-// Testnet chain names supported by @testnet-mayan/swap-sdk
-import { DZapClient, type ZapStatusResponse } from '@dzapio/sdk';
+import {
+  DZapClient,
+  type ZapStatusResponse,
+  type HexString,
+} from '@dzapio/sdk';
 import type {
   AttestationReceipt,
   Chain,
@@ -21,7 +24,7 @@ import { isEvmNativeSigner } from '@wormhole-foundation/sdk-evm';
 import type { ethers } from 'ethers';
 import { getChainFromId, getChainId } from 'utils/chainMapping';
 
-export function getNativeContractAddress(chain: Chain): string {
+export function getNativeContractAddress(chain: Chain): HexString {
   return '0x0000000000000000000000000000000000000000';
 }
 

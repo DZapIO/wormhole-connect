@@ -145,13 +145,9 @@ class DZapRouteBase<N extends Network> extends routes.AutomaticRoute<
     }
   }
 
-  protected bpsToPercent(bps: number): number {
-    return bps / 10000;
-  }
-
-  protected toDZapAddress(tokenId: TokenId): string {
+  protected toDZapAddress(tokenId: TokenId): HexString {
     return !isNative(tokenId.address)
-      ? canonicalAddress(tokenId)
+      ? (canonicalAddress(tokenId) as HexString)
       : getNativeContractAddress(tokenId.chain);
   }
 
@@ -193,9 +189,9 @@ class DZapRouteBase<N extends Network> extends routes.AutomaticRoute<
     }
 
     const quoteParams: ZapQuoteRequest = {
-      srcToken: request.source.id.address.toString() as HexString,
+      srcToken: this.toDZapAddress(request.source.id),
       srcChainId: getChainId(request.source.id.chain)!,
-      destToken: request.destination.id.address.toString() as HexString,
+      destToken: this.toDZapAddress(request.destination.id),
       destChainId: getChainId(request.destination.id.chain)!,
       recipient: (request.recipient?.address.address ||
         request.sender?.address.address) as HexString,
@@ -391,9 +387,9 @@ class DZapRouteBase<N extends Network> extends routes.AutomaticRoute<
       const buildRequest: ZapBuildTxnRequest = {
         account: originAddress as HexString,
         destChainId: getChainId(request.destination.id.chain)!,
-        destToken: request.destination.id.address.toString() as HexString,
+        destToken: this.toDZapAddress(request.destination.id),
         srcChainId: getChainId(request.source.id.chain)!,
-        srcToken: request.source.id.address.toString() as HexString,
+        srcToken: this.toDZapAddress(request.source.id),
         recipient: destinationAddress as HexString,
         refundee: originAddress as HexString,
         slippage: 0.5, // TODO: Add slippage control
