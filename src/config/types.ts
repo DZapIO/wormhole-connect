@@ -18,11 +18,12 @@ import type {
   WormholeConnectEventHandler,
 } from 'telemetry/types';
 
-import type { ZapOperator } from 'routes/sdkZap';
+import type RouteOperator from 'routes/operator';
 import type { TransferInfo } from 'utils/sdkv2';
 import type { Token, TokenCache, TokenTuple } from './tokens';
 import type { UiConfig } from './ui';
 import type { ZapAssetCache, ZapAssetType } from './zapAsset';
+import type ZapDataProvider from 'zap/dataProvider';
 
 export * from './ui';
 
@@ -186,7 +187,9 @@ export interface InternalConfig<N extends Network> {
   chains: ChainsConfig;
   chainsArr: ChainConfig[];
 
-  routes: ZapOperator;
+  routes: RouteOperator;
+
+  zapDataProvider: ZapDataProvider;
 
   // Callbacks
   triggerEvent: TriggerEventHandler;

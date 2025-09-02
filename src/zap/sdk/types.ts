@@ -1,14 +1,12 @@
 import type {
   Chain,
   Network,
-  routes,
   amount as sdkAmount,
 } from '@wormhole-foundation/sdk';
 
 type Amount = sdkAmount.Amount;
 
-export interface ZapProvider<P = any, T = any>
-  extends routes.StaticRouteMethods<routes.RouteConstructor<any>> {
+export interface ZapDataProvider<P = any, T = any> {
   getPools(
     chain: Chain,
     provider: string,
@@ -22,9 +20,12 @@ export interface ZapProvider<P = any, T = any>
   ): Promise<ZapPositionData<T>[]>;
 }
 
-export interface ZapProviderConstructor<P = any, T = any>
-  extends routes.RouteConstructor<any> {
-  new (...args: any[]): ZapProvider<P, T>;
+export interface ZapDataProviderConstructor<P = any, T = any> {
+  new (...args: any[]): ZapDataProvider<P, T>;
+  readonly meta: {
+    name: string;
+    provider: string;
+  };
   isProviderSupported<N extends Network>(
     Network: N,
     chain: Chain,
@@ -59,27 +60,27 @@ export interface ZapPositionData<D = any> {
   details?: D;
 }
 
-export class ZapProviderError extends Error {
+export class ZapDataProviderError extends Error {
   constructor(message: string, public cause?: Error) {
     super(message);
-    this.name = 'ZapProviderError';
+    this.name = 'ZapDataProviderError';
   }
 }
 
-export class ZapNetworkError extends Error {
+export class ZapDataProviderNetworkError extends Error {
   constructor(message: string, public cause?: Error) {
     super(message);
-    this.name = 'ZapNetworkError';
+    this.name = 'ZapDataProviderNetworkError';
   }
 }
 
-export class ZapRateLimitError extends Error {
+export class ZapDataProviderRateLimitError extends Error {
   constructor(
     message: string,
 
     public retryAfter?: number,
   ) {
     super(message);
-    this.name = 'ZapRateLimitError';
+    this.name = 'ZapDataProviderRateLimitError';
   }
 }

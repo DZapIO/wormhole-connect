@@ -1,13 +1,10 @@
 import type { Chain, Network } from '@wormhole-foundation/sdk';
-import type { ZapProviderConstructor } from './types';
-import SDKv2Route from 'routes/sdkv2';
+import type { ZapDataProviderConstructor } from './types';
 
-export class ZapSDK extends SDKv2Route {
-  constructor(readonly pc: ZapProviderConstructor) {
-    super(pc);
-  }
+export class ZapDataSDK {
+  constructor(readonly pc: ZapDataProviderConstructor) {}
 
-  isProviderSupported<N extends Network>(
+  isDataProviderSupported<N extends Network>(
     Network: N,
     chain: Chain,
     provider: string,

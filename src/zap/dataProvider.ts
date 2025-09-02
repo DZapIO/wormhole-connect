@@ -1,13 +1,12 @@
-import type { Chain, routes } from '@wormhole-foundation/sdk';
+import type { Chain } from '@wormhole-foundation/sdk';
 import config from 'config';
-import Routeperator, { DEFAULT_ROUTES } from 'routes/operator';
-import { DZapRoute } from './dZap';
-import { ZapSDK } from './sdkZap/route';
+import { DZapDataProvider } from './dZap';
+import { ZapDataSDK } from './sdk/data';
 import type {
+  ZapDataProviderConstructor,
   ZapPoolData,
   ZapPositionData,
-  ZapProviderConstructor,
-} from './sdkZap/types';
+} from './sdk/types';
 
 export interface ZapPoolResult {
   pools: ZapPoolData[];
@@ -24,11 +23,11 @@ export interface ZapPositionResult {
   timestamp: Date;
 }
 
-type forEachCallback<T> = (name: string, route: ZapSDK) => T;
+type forEachCallback<T> = (name: string, route: ZapDataSDK) => T;
 
 export const DEFAULT_ZAP_PROVIDERS = [
   // Add providers here as they are implemented
-  DZapRoute,
+  DZapDataProvider,
 ];
 
 export interface ZapPoolParams {
@@ -44,16 +43,14 @@ export interface ZapPositionParams {
   limit?: number;
 }
 
-export default class ZapOperator extends Routeperator {
-  zapRoutes: Record<string, ZapSDK>;
+export default class ZapDataProvider {
+  zapRoutes: Record<string, ZapDataSDK>;
+  preference: string[];
 
-  constructor(
-    routesConfig: routes.RouteConstructor<any>[] = DEFAULT_ROUTES,
-    zapRoutes: ZapProviderConstructor[] = DEFAULT_ZAP_PROVIDERS,
-  ) {
-    super(routesConfig);
+  constructor(zapRoutes: ZapDataProviderConstructor[] = DEFAULT_ZAP_PROVIDERS) {
     const providerMap = {};
     const providerClassMap = {};
+    const preference: string[] = [];
 
     for (const zc of zapRoutes) {
       const name = zc.meta.name;
@@ -62,11 +59,13 @@ export default class ZapOperator extends Routeperator {
       } else if (name in providerMap) {
         throw new Error(`Provider has duplicate name: ${name}`);
       }
-      providerMap[name] = new ZapSDK(zc);
+      providerMap[name] = new ZapDataSDK(zc);
       providerClassMap[name] = zc;
+      preference.push(name);
     }
 
     this.zapRoutes = providerMap;
+    this.preference = preference;
   }
 
   async forEachZap<T>(callback: forEachCallback<T>): Promise<T[]> {

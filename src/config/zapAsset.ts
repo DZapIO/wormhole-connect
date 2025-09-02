@@ -1,7 +1,7 @@
 import type { ZapPool, ZapPosition, ZapUnderlyingToken } from '@dzapio/sdk';
 import type { Chain, TokenId, amount } from '@wormhole-foundation/sdk';
 import { isChain, UniversalAddress } from '@wormhole-foundation/sdk';
-import type { ZapPoolData, ZapPositionData } from 'routes/sdkZap';
+import type { ZapPoolData, ZapPositionData } from 'zap/sdk';
 import type { TokenJson, TokenTuple } from './tokens';
 import {
   Token,
@@ -338,7 +338,7 @@ export class ZapAsset extends Token {
   }
 }
 
-export class ZapAssetMapping<T> extends TokenMapping<T> {
+export class ZapAssetMapping<T extends ZapAsset> extends TokenMapping<T> {
   add(token: ZapAssetId, value: T) {
     if (!this._mapping.has(token.chain)) {
       this._mapping.set(token.chain, new Map());
@@ -394,20 +394,24 @@ export class ZapAssetMapping<T> extends TokenMapping<T> {
     }
   }
 
-  getAllPoolsForChain(chain: Chain): T[] {
+  getAllPoolsForChainAndProvider(chain: Chain, provider: string): T[] {
     const zapAssets = this._mapping.get(chain);
     if (!zapAssets) return [];
 
     return Array.from(zapAssets.values()).filter(
-      (asset: any) => asset.zapTokenInfo?.type === ZapAssetType.POOL,
+      (asset: T) =>
+        asset.zapTokenInfo?.type === ZapAssetType.POOL &&
+        asset.zapTokenInfo?.provider === provider,
     );
   }
-  getAllPositionsForChain(chain: Chain): T[] {
+  getAllPositionsForChainAndProvider(chain: Chain, provider: string): T[] {
     const zapAssets = this._mapping.get(chain);
     if (!zapAssets) return [];
 
     return Array.from(zapAssets.values()).filter(
-      (asset: any) => asset.zapTokenInfo?.type === ZapAssetType.POSITION,
+      (asset: T) =>
+        asset.zapTokenInfo?.type === ZapAssetType.POSITION &&
+        asset.zapTokenInfo?.provider === provider,
     );
   }
 }

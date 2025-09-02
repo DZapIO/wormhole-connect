@@ -27,7 +27,8 @@ import aptos from '@wormhole-foundation/sdk/aptos';
 import evm from '@wormhole-foundation/sdk/evm';
 import solana from '@wormhole-foundation/sdk/solana';
 import sui from '@wormhole-foundation/sdk/sui';
-import { ZapOperator } from 'routes/sdkZap';
+import RouteOperator from 'routes/operator';
+import ZapDataProvider from '../zap/dataProvider';
 import { CHAIN_ORDER } from './constants';
 import { buildTokenCache } from './tokens';
 import { createUiConfig } from './ui';
@@ -165,7 +166,9 @@ export function buildConfig(
     zapAssets,
     protocols: customConfig.protocols || networkData.protocols || {},
 
-    routes: new ZapOperator(customConfig.routes),
+    routes: new RouteOperator(customConfig.routes),
+
+    zapDataProvider: new ZapDataProvider(),
 
     // UI details
     ui: createUiConfig({ ...customConfig.ui }),

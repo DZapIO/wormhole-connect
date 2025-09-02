@@ -11,7 +11,7 @@ import React, {
   useState,
   type ReactNode,
 } from 'react';
-import { type ZapPoolData, type ZapPositionData } from '../routes/sdkZap';
+import { type ZapPoolData, type ZapPositionData } from '../zap/sdk';
 
 interface ZapContextType {
   lastZapAssetCacheUpdate: Date;
@@ -48,6 +48,13 @@ export const ZapProvider: React.FC<ZapProviderProps> = ({ children }) => {
   // Cache-first position fetching (following TokensContext pattern)
   const getPosition = useCallback((position: ZapPositionData): ZapAsset => {
     const zapAsset = getZapAssetFromPosition(position);
+
+    const cachedPools = config.zapAssets.get(zapAsset.tuple);
+
+    if (cachedPools) {
+      return cachedPools;
+    }
+
     config.zapAssets.add(zapAsset);
     setLastZapAssetCacheUpdate(config.zapAssets.lastUpdate);
     config.zapAssets.persist();
