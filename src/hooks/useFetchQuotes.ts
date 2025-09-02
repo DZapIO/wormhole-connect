@@ -21,6 +21,7 @@ type Params = {
   amount?: sdkAmount.Amount;
   nativeGas: number;
   recipient?: string;
+  sender?: string;
 };
 
 type HookReturn = {

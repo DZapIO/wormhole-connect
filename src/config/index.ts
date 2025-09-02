@@ -27,7 +27,7 @@ import aptos from '@wormhole-foundation/sdk/aptos';
 import evm from '@wormhole-foundation/sdk/evm';
 import solana from '@wormhole-foundation/sdk/solana';
 import sui from '@wormhole-foundation/sdk/sui';
-import { ZapOperator } from 'routes/zap';
+import { ZapOperator } from 'routes/sdkZap';
 import { CHAIN_ORDER } from './constants';
 import { buildTokenCache } from './tokens';
 import { createUiConfig } from './ui';

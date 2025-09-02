@@ -1,17 +1,14 @@
 import type {
   Chain,
-  amount as sdkAmount,
-  routes,
   Network,
-  ChainContext,
+  routes,
+  amount as sdkAmount,
 } from '@wormhole-foundation/sdk';
 
 type Amount = sdkAmount.Amount;
 
-export type ZapProvider<P = any, T = any> = routes.StaticRouteMethods<
-  routes.RouteConstructor<any>
-> & {
-  isSupportedProvider(provider: string, chain: Chain): boolean;
+export interface ZapProvider<P = any, T = any>
+  extends routes.StaticRouteMethods<routes.RouteConstructor<any>> {
   getPools(
     chain: Chain,
     provider: string,
@@ -23,22 +20,16 @@ export type ZapProvider<P = any, T = any> = routes.StaticRouteMethods<
     userAddress: string,
     limit?: number,
   ): Promise<ZapPositionData<T>[]>;
-};
+}
 
-export interface ZapProviderConstructor<P = any, T = any> {
+export interface ZapProviderConstructor<P = any, T = any>
+  extends routes.RouteConstructor<any> {
   new (...args: any[]): ZapProvider<P, T>;
-  /** Details about the provider provided by the implementation */
-  readonly meta: { name: string; provider: string };
-  /** get the list of networks this provider supports */
-  supportedNetworks(): Network[];
-  /** get the list of chains this provider supports */
-  supportedChains(network: Network): Chain[];
-  /** get if the chain allows same-chain swaps */
-  supportsSameChainSwaps?(network: Network, chain: Chain): boolean;
-  /** check if the provider is supported for a given chain */
-  isProtocolSupported<N extends Network>(chain: ChainContext<N>): boolean;
-  // REMOVE these instance methods from here:
-  // getPools, getPositions, isSupportedProvider
+  isProviderSupported<N extends Network>(
+    Network: N,
+    chain: Chain,
+    provider: string,
+  ): boolean;
 }
 
 export interface ZapPoolData<D = any> {

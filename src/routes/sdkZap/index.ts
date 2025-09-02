@@ -1,6 +1,6 @@
 // Export the main classes and types
-export { default as ZapOperator } from './operator';
-export { ZapSDK } from './sdk';
+export { default as ZapOperator } from '../zapOperator';
+export { ZapSDK } from './route';
 
 // Export types
 export type { ZapProvider, ZapPoolData, ZapPositionData } from './types';
@@ -13,4 +13,4 @@ export type {
   ZapPositionResult,
   ZapPoolParams,
   ZapPositionParams,
-} from './operator';
+} from '../zapOperator';

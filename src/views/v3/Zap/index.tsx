@@ -183,6 +183,7 @@ function Zap(props: ZapProps) {
     destToken,
     toNativeToken,
     receivingWallet,
+    sendingWallet,
   });
 
   const { isFetching: isFetchingSupportedDestTokens, supportedDestTokens } =

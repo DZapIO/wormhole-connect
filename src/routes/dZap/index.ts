@@ -1,32 +1,23 @@
 import type {
   HexString,
-  ZapPool,
-  ZapPoolsRequest,
-  ZapPosition,
-  ZapPositionsRequest,
-  ZapQuoteResponse,
-} from '@dzapio/sdk';
-import type { Chain, Network } from '@wormhole-foundation/sdk-connect';
-import { amount } from '@wormhole-foundation/sdk-connect';
-import type {
-  ZapPoolData,
-  ZapPositionData,
-  ZapProvider,
-} from 'routes/zap/types';
-import {
-  ZapNetworkError,
-  ZapProviderError,
-  ZapRateLimitError,
-} from 'routes/zap/types';
-import type {
   ZapBuildTxnRequest,
   ZapBuildTxnResponse,
+  ZapChains,
+  ZapPool,
+  ZapPoolsRequest,
+  ZapPoolsResponse,
+  ZapPosition,
+  ZapPositionsRequest,
+  ZapPositionsResponse,
   ZapQuoteRequest,
+  ZapQuoteResponse,
 } from '@dzapio/sdk';
 import { DZapClient } from '@dzapio/sdk';
 import type {
+  Chain,
   ChainAddress,
   ChainContext,
+  Network,
   Signer,
   SourceInitiatedTransferReceipt,
   TokenId,
@@ -34,6 +25,7 @@ import type {
 } from '@wormhole-foundation/sdk-connect';
 import {
   TransferState,
+  amount,
   canonicalAddress,
   isAttested,
   isCompleted,
@@ -53,14 +45,24 @@ import {
   EvmUnsignedTransaction,
 } from '@wormhole-foundation/sdk-evm';
 import axios from 'axios';
-import { getChainId } from 'utils/chainMapping';
-import { getAllZapTokenIdsForChain } from '../../../../utils/tokenHelpers';
+import type {
+  ZapPoolData,
+  ZapPositionData,
+  ZapProvider,
+} from 'routes/sdkZap/types';
 import {
+  ZapNetworkError,
+  ZapProviderError,
+  ZapRateLimitError,
+} from 'routes/sdkZap/types';
+import { getAllZapTokenIdsForChain } from '../../utils/tokenHelpers';
+import {
+  getChainFromId,
+  getChainId,
   getNativeContractAddress,
   getTransactionStatus,
   isDZapNativeContractAddress,
   isTestnetSupportedChain,
-  supportedChains,
   txStatusToReceipt,
 } from './utils';
 
@@ -90,6 +92,57 @@ type R = routes.Receipt;
 type Tp = routes.TransferParams<Op>;
 type Vr = routes.ValidationResult<Op>;
 
+class DZapConfig {
+  sdk: DZapClient;
+  supportedChains: ZapChains | null;
+
+  constructor() {
+    this.sdk = DZapClient.getInstance();
+    this.supportedChains = null;
+    this.init();
+  }
+  async init() {
+    if (this.supportedChains) {
+      return;
+    }
+    try {
+      const chains = await this.sdk.getZapChains();
+      this.supportedChains = chains;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  isProviderSupported(
+    network: Network,
+    chain: Chain,
+    provider: string,
+  ): boolean {
+    if (!this.supportedChains) {
+      return false;
+    }
+    if (network === 'Testnet') {
+      return false;
+    }
+    const chainId = getChainId(chain);
+    if (!chainId) {
+      return false;
+    }
+    return this.supportedChains[chainId].supportedProviders.includes(provider);
+  }
+
+  getSupportedChains(network: Network): Chain[] {
+    if (network === 'Testnet') {
+      return [];
+    }
+    return Object.keys(this.supportedChains || {})
+      .map((chain) => getChainFromId(Number(chain)))
+      .filter((chain) => chain !== undefined);
+  }
+}
+
+const config = new DZapConfig();
+
 export class DZapRoute<N extends Network>
   extends routes.AutomaticRoute<N, Op, Vp, R>
   implements ZapProvider<PoolD, PosD>
@@ -113,6 +166,14 @@ export class DZapRoute<N extends Network>
     );
   }
 
+  static isProviderSupported<N extends Network>(
+    Network: N,
+    chain: Chain,
+    provider: string,
+  ): boolean {
+    return config.isProviderSupported(Network, chain, provider);
+  }
+
   getDefaultOptions(): Op {
     return {
       slippage: 0.5,
@@ -124,13 +185,7 @@ export class DZapRoute<N extends Network>
   }
 
   static supportedChains(network: Network): Chain[] {
-    return supportedChains(network);
-  }
-
-  static isProtocolSupported<N extends Network>(
-    chain: ChainContext<N>,
-  ): boolean {
-    return supportedChains(chain.network).includes(chain.chain);
+    return config.getSupportedChains(network);
   }
 
   // DZap can handle any input and output token that has liquidity
@@ -190,21 +245,11 @@ export class DZapRoute<N extends Network>
     if (this.isTestnetRequest(request)) {
       if (!isTestnetSupportedChain(fromChain.chain)) {
         throw new Error(
-          `Chain ${
-            fromChain.chain
-          } is not supported on testnet. Supported testnet chains: ${supportedChains(
-            'Testnet',
-          ).join(', ')}`,
+          `Chain ${fromChain.chain} is not supported on testnet.`,
         );
       }
       if (!isTestnetSupportedChain(toChain.chain)) {
-        throw new Error(
-          `Chain ${
-            toChain.chain
-          } is not supported on testnet. Supported testnet chains: ${supportedChains(
-            'Testnet',
-          ).join(', ')}`,
-        );
+        throw new Error(`Chain ${toChain.chain} is not supported on testnet.`);
       }
     }
 
@@ -523,11 +568,6 @@ export class DZapRoute<N extends Network>
     return true;
   }
 
-  isSupportedProvider(provider: string, chain: Chain): boolean {
-    // TODO: Implement
-    return true;
-  }
-
   async getPools(
     chain: Chain,
     provider: string,
@@ -545,8 +585,8 @@ export class DZapRoute<N extends Network>
         limit: limit || 100,
       };
 
-      const pools = await this.sdk.getZapPools(request);
-      return pools.map((pool) => this.mapZapPoolToPoolData(pool, chain));
+      const pools: ZapPoolsResponse = await this.sdk.getZapPools(request);
+      return pools.pools.map((pool) => this.mapZapPoolToPoolData(pool, chain));
     } catch (error) {
       this.handleError(error, 'getPools');
     }
@@ -570,8 +610,16 @@ export class DZapRoute<N extends Network>
         account: userAddress as HexString,
       };
 
-      const positions = await this.sdk.getZapPositions(request);
-      return positions.map(this.mapZapPositionToPositionData);
+      const positions: ZapPositionsResponse = await this.sdk.getZapPositions(
+        request,
+      );
+      return positions.positions.map((position) =>
+        this.mapZapPositionToPositionData(
+          position,
+          userAddress as HexString,
+          chain,
+        ),
+      );
     } catch (error) {
       this.handleError(error, 'getPositions');
     }

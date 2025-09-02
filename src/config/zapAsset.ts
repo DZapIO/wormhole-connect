@@ -1,7 +1,7 @@
 import type { ZapPool, ZapPosition, ZapUnderlyingToken } from '@dzapio/sdk';
-import type { Chain, TokenId } from '@wormhole-foundation/sdk';
+import type { Chain, TokenId, amount } from '@wormhole-foundation/sdk';
 import { isChain, UniversalAddress } from '@wormhole-foundation/sdk';
-import { getChainFromId } from 'utils/chainMapping';
+import type { ZapPoolData, ZapPositionData } from 'routes/sdkZap';
 import type { TokenJson, TokenTuple } from './tokens';
 import {
   Token,
@@ -31,7 +31,7 @@ export type ZapTokenInfo = {
 };
 
 export type ZapPositionDetails = {
-  amount: string;
+  amount: amount.Amount;
   amountUSD: string;
   nftId?: string;
 };
@@ -45,7 +45,7 @@ export enum ZapAssetType {
 // Union type for zap data (positions or pools from SDK)
 export type ZapData = ZapPosition | ZapPool;
 
-const getZapAssetFeildsFromTupleKey = (key: string) => {
+const getZapAssetFieldsFromTupleKey = (key: string) => {
   const [address, type, provider, nftId] = key.split('/');
   return { address, type, provider, nftId };
 };
@@ -69,56 +69,46 @@ const getTupleKeyFromZapAssetFields = (fields: {
   return parts.join('/');
 };
 
-export function getZapAssetFromPool(pool: ZapPool): ZapAsset | null {
-  const chain = getChainFromId(pool.chainId);
-  if (!chain) {
-    return null;
-  }
+export function getZapAssetFromPool(pool: ZapPoolData): ZapAsset {
   return new ZapAsset(
-    chain,
+    pool.chain,
     pool.address,
     pool.decimals,
     pool.name,
     pool.symbol,
-    pool.underlyingAssets?.[0]?.logo || '',
+    pool.logo || '',
     undefined,
     undefined,
     {
       type: ZapAssetType.POOL,
       provider: pool.provider,
-      underlyingAssets: pool.underlyingAssets,
-      apr: pool.apr,
-      tvl: pool.tvl,
+      underlyingAssets: pool.details?.underlyingAssets || [],
+      apr: pool.apr ?? 0,
+      tvl: pool.tvl?.toString(),
     },
   );
 }
 
-export function getZapAssetFromPosition(
-  position: ZapPosition,
-): ZapAsset | null {
-  const chain = getChainFromId(position.chainId);
-  if (!chain) {
-    return null;
-  }
+export function getZapAssetFromPosition(position: ZapPositionData): ZapAsset {
   return new ZapAsset(
-    chain,
+    position.chain,
     position.address,
     position.decimals,
     position.name,
     position.name,
-    position.underlyingAssets?.[0]?.logo || '',
+    position.logo || '',
     undefined,
     undefined,
     {
       type: ZapAssetType.POSITION,
       provider: position.provider,
-      underlyingAssets: position.underlyingAssets,
-      apr: position.apr,
+      underlyingAssets: position.details?.underlyingAssets || [],
+      apr: position.details?.apr ?? 0,
     },
     {
       amount: position.amount,
-      amountUSD: position.amountUSD,
-      nftId: position.nftDetails?.id,
+      amountUSD: position.amountUSD?.toString() || '',
+      nftId: position.details?.nftId,
     },
   );
 }
@@ -128,20 +118,20 @@ export function isZapPoolOrPositionTuple(tuple: any): tuple is TokenTuple {
     return false;
   }
   const [, key] = tuple;
-  const { type } = getZapAssetFeildsFromTupleKey(key);
+  const { type } = getZapAssetFieldsFromTupleKey(key);
   return type === ZapAssetType.POSITION || type === ZapAssetType.POOL;
 }
 
 // Type guards for SDK data
 export function isZapPosition(asset: TokenTuple) {
   const [, key] = asset;
-  const { type } = getZapAssetFeildsFromTupleKey(key);
+  const { type } = getZapAssetFieldsFromTupleKey(key);
   return type === ZapAssetType.POSITION;
 }
 
 export function isZapPool(asset: TokenTuple) {
   const [, key] = asset;
-  const { type } = getZapAssetFeildsFromTupleKey(key);
+  const { type } = getZapAssetFieldsFromTupleKey(key);
   return type === ZapAssetType.POOL;
 }
 
@@ -165,7 +155,7 @@ export function getTupleFromZapAssetId(zapAssetId: ZapAssetId): TokenTuple {
 
 export function getZapAssetIdFromTuple(tuple: TokenTuple): ZapAssetId {
   const [chain, key] = tuple;
-  const { type, provider, nftId, address } = getZapAssetFeildsFromTupleKey(key);
+  const { type, provider, nftId, address } = getZapAssetFieldsFromTupleKey(key);
   return {
     address: new UniversalAddress(address),
     chain,
@@ -228,6 +218,7 @@ export function parseZapAssetKey(key: string): ZapAssetId {
 // JSON interface for ZapAsset serialization
 interface ZapAssetJson extends TokenJson {
   zapTokenInfo?: ZapTokenInfo;
+  zapPositionDetails?: ZapPositionDetails;
 }
 
 export type ZapAssetId = TokenId & {
@@ -314,6 +305,7 @@ export class ZapAsset extends Token {
         : undefined,
       coingeckoWebId: this.coingeckoWebId,
       zapTokenInfo: this.zapTokenInfo,
+      zapPositionDetails: this.zapPositionDetails,
     };
   }
 
@@ -327,6 +319,7 @@ export class ZapAsset extends Token {
     tokenBridgeOriginalTokenId,
     coingeckoWebId,
     zapTokenInfo,
+    zapPositionDetails,
   }: ZapAssetJson) {
     return new ZapAsset(
       chain as Chain,
@@ -340,6 +333,7 @@ export class ZapAsset extends Token {
         : undefined,
       coingeckoWebId,
       zapTokenInfo,
+      zapPositionDetails,
     );
   }
 }
@@ -361,6 +355,7 @@ export class ZapAssetMapping<T> extends TokenMapping<T> {
     this.lastUpdate = new Date();
     this.size += 1;
   }
+
   get(key: string): T | undefined;
   get(tokenId: ZapAssetId): T | undefined;
   get(tokenTuple: TokenTuple): T | undefined;
@@ -405,6 +400,14 @@ export class ZapAssetMapping<T> extends TokenMapping<T> {
 
     return Array.from(zapAssets.values()).filter(
       (asset: any) => asset.zapTokenInfo?.type === ZapAssetType.POOL,
+    );
+  }
+  getAllPositionsForChain(chain: Chain): T[] {
+    const zapAssets = this._mapping.get(chain);
+    if (!zapAssets) return [];
+
+    return Array.from(zapAssets.values()).filter(
+      (asset: any) => asset.zapTokenInfo?.type === ZapAssetType.POSITION,
     );
   }
 }
