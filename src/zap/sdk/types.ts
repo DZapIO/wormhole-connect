@@ -59,28 +59,3 @@ export interface ZapPositionData<D = any> {
   amountUSD?: number;
   details?: D;
 }
-
-export class ZapDataProviderError extends Error {
-  constructor(message: string, public cause?: Error) {
-    super(message);
-    this.name = 'ZapDataProviderError';
-  }
-}
-
-export class ZapDataProviderNetworkError extends Error {
-  constructor(message: string, public cause?: Error) {
-    super(message);
-    this.name = 'ZapDataProviderNetworkError';
-  }
-}
-
-export class ZapDataProviderRateLimitError extends Error {
-  constructor(
-    message: string,
-
-    public retryAfter?: number,
-  ) {
-    super(message);
-    this.name = 'ZapDataProviderRateLimitError';
-  }
-}

@@ -9,12 +9,6 @@ export type {
   ZapPositionData,
 } from './types';
 
-export {
-  ZapDataProviderError,
-  ZapDataProviderNetworkError,
-  ZapDataProviderRateLimitError,
-} from './types';
-
 // Export operator types
 export type {
   ZapPoolResult,

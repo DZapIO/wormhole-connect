@@ -17,11 +17,6 @@ import type {
   ZapPoolData,
   ZapPositionData,
 } from '../sdk/types';
-import {
-  ZapDataProviderError,
-  ZapDataProviderNetworkError,
-  ZapDataProviderRateLimitError,
-} from '../sdk/types';
 
 type PoolD = ZapPool;
 type PosD = ZapPosition;
@@ -40,7 +35,7 @@ export class DZapDataProvider implements ZapDataProvider<PoolD, PosD> {
     try {
       const chainId = getChainId(chain);
       if (!chainId) {
-        throw new ZapDataProviderError(`Unsupported chain: ${chain}`);
+        throw new Error(`Unsupported chain: ${chain}`);
       }
 
       const request: ZapPoolsRequest = {
@@ -65,7 +60,7 @@ export class DZapDataProvider implements ZapDataProvider<PoolD, PosD> {
     try {
       const chainId = getChainId(chain);
       if (!chainId) {
-        throw new ZapDataProviderError(`Unsupported chain: ${chain}`);
+        throw new Error(`Unsupported chain: ${chain}`);
       }
 
       const request: ZapPositionsRequest = {
@@ -152,53 +147,8 @@ export class DZapDataProvider implements ZapDataProvider<PoolD, PosD> {
       const status = error.response?.status || 500;
       const data = error.response?.data;
 
-      if (status === 429) {
-        const retryAfter = error.response?.headers['retry-after'];
-        throw new ZapDataProviderRateLimitError(
-          `Rate limit exceeded for dZap ${operation}`,
-          retryAfter ? parseInt(retryAfter) : undefined,
-        );
-      }
-
-      if (status >= 500) {
-        throw new ZapDataProviderNetworkError(
-          `Server error from dZap ${operation}: ${
-            data?.message || error.message
-          }`,
-          error,
-        );
-      }
-
-      if (status >= 400) {
-        throw new ZapDataProviderError(
-          `Client error from dZap ${operation}: ${
-            data?.message || error.message
-          }`,
-          error,
-        );
-      }
-
-      // Network/connection errors
-      throw new ZapDataProviderNetworkError(
-        `Network error for dZap ${operation}: ${error.message}`,
-        error,
-      );
+      throw new Error(`${operation} failed: ${status} ${data}`);
     }
-
-    // Non-axios errors
-    if (
-      error instanceof ZapDataProviderError ||
-      error instanceof ZapDataProviderNetworkError ||
-      error instanceof ZapDataProviderRateLimitError
-    ) {
-      throw error;
-    }
-
-    throw new ZapDataProviderError(
-      `Unknown error in dZap ${operation}: ${
-        error instanceof Error ? error.message : 'Unknown error'
-      }`,
-      error instanceof Error ? error : undefined,
-    );
+    throw new Error(`${operation} failed: ${error.message}`);
   }
 }
