@@ -181,6 +181,7 @@ function Bridge(props: BridgeProps) {
     destToken,
     toNativeToken,
     receivingWallet,
+    sendingWallet,
   });
 
   const { isFetching: isFetchingSupportedDestTokens, supportedDestTokens } =

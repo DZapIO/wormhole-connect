@@ -2,7 +2,7 @@ import React from 'react';
 
 import type { ChainConfig } from 'config/types';
 import type { ZapAsset } from 'config/zapAsset';
-import useGetPools from 'hooks/zap/useGetPools';
+import useGetPools from 'hooks/useGetPools';
 import type { WalletData } from 'store/wallet';
 import AssetList from './AssetList';
 

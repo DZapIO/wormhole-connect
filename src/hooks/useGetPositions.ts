@@ -4,7 +4,7 @@ import type { Token } from 'config/tokens';
 import type { ZapAsset } from 'config/zapAsset';
 import { useZap } from 'contexts/ZapContext';
 import { useCallback, useEffect, useState } from 'react';
-import type { ZapPositionData } from 'routes/sdkZap';
+import type { ZapPositionData } from 'zap/sdk';
 
 type Props = {
   userAddress: string;
@@ -29,16 +29,17 @@ const computePositionsForChainAndProvider = async (
     return [];
   }
 
-  const cachedPositions = config.zapAssets
-    .getAllPositionsForChain(chain)
-    .filter((position) => position.zapTokenInfo?.provider === provider);
+  // const cachedPositions = config.zapAssets.getAllPositionsForChainAndProvider(
+  //   chain,
+  //   provider,
+  // );
 
-  if (cachedPositions.length > 0) {
-    return cachedPositions;
-  }
+  // if (cachedPositions.length > 0) {
+  //   return cachedPositions;
+  // }
 
   // Both chains selected - fetch supported tokens from routes
-  const supportedTokenIds = await config.routes.getPositions({
+  const supportedTokenIds = await config.zapDataProvider.getPositions({
     chain,
     userAddress: userAddress,
     provider,

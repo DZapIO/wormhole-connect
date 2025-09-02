@@ -5,7 +5,7 @@ import type { ZapAsset } from 'config/zapAsset';
 import { useZap } from 'contexts/ZapContext';
 import { useCallback, useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import type { ZapPoolData } from 'routes/sdkZap';
+import type { ZapPoolData } from 'zap/sdk';
 import { setDestToken } from 'store/transferInput';
 
 type Props = {
@@ -30,7 +30,7 @@ const computePoolsForChainAndProvider = async (
   }
 
   // Both chains selected - fetch supported tokens from routes
-  const supportedTokenIds = await config.routes.getPools({
+  const supportedTokenIds = await config.zapDataProvider.getPools({
     chain,
     provider,
     limit,

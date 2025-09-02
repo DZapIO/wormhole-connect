@@ -2,7 +2,7 @@ import React from 'react';
 
 import type { ChainConfig } from 'config/types';
 import type { ZapAsset, ZapPosition } from 'config/zapAsset';
-import useComputePosition from 'hooks/zap/useGetPositions';
+import useComputePosition from 'hooks/useGetPositions';
 import type { WalletData } from 'store/wallet';
 import AssetList from './AssetList';
 
