@@ -2,7 +2,6 @@ import type { ZapQuoteResponse } from '@dzapio/sdk';
 import type { Chain } from '@wormhole-foundation/sdk';
 import type { ChainConfig } from 'config';
 import config from 'config';
-import { getChainId } from './chainMapping';
 import { getUSDFormat } from 'utils';
 
 export function getZapChainConfigs(
@@ -22,13 +21,10 @@ export const getDefaultProvider = (
   chainConfig?: ChainConfig,
   prevProvider?: string | undefined,
 ) => {
-  const chainId = chainConfig ? getChainId(chainConfig.sdkName) : undefined;
+  const chain = chainConfig ? chainConfig.sdkName : undefined;
   const protocols = Object.values(config.protocols);
-  console.log(chainId);
-  const supportedProviders = chainId
-    ? protocols.filter((protocol) =>
-        protocol.supportedChainIds.includes(chainId),
-      )
+  const supportedProviders = chain
+    ? protocols.filter((protocol) => protocol.supportedChains.includes(chain))
     : undefined;
 
   if (

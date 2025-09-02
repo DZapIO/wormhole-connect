@@ -12,7 +12,6 @@ import React, { useMemo, useState } from 'react';
 import config from 'config';
 import type { ChainConfig, ProtocolConfig } from 'config/types';
 import PlusIcon from 'icons/Plus';
-import { getChainId } from 'utils/chainMapping';
 import SearchableList from 'views/v3/Bridge/AssetPicker/SearchableList';
 
 type Props = {
@@ -125,10 +124,10 @@ function ProtocolList(props: Props) {
   const supportedProtocols = useMemo(() => {
     if (!props.selectedChainConfig) return [];
 
-    const chainId = getChainId(props.selectedChainConfig.sdkName);
-    if (!chainId) return [];
+    const chain = props.selectedChainConfig?.sdkName;
+    if (!chain) return [];
     return Object.values(providers).filter((provider) =>
-      provider.supportedChainIds.includes(chainId),
+      provider.supportedChains.includes(chain),
     );
   }, [props.selectedChainConfig, providers]);
 

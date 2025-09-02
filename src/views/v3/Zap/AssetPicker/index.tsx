@@ -103,11 +103,7 @@ function AssetPicker(props: Props) {
 
   const tokenBalance = useMemo(() => {
     if (props.token?.zapPositionDetails) {
-      const res = sdkAmount.fromBaseUnits(
-        BigInt(props.token?.zapPositionDetails?.amount ?? '0'),
-        props.token.decimals,
-      );
-      return res;
+      return props.token.zapPositionDetails.amount;
     }
     if (props.isSource && props.balances && props.token) {
       return props.balances[props.token.key]?.balance;

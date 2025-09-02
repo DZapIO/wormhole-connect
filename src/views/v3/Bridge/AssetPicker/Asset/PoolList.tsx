@@ -2,9 +2,8 @@ import React from 'react';
 
 import type { ChainConfig } from 'config/types';
 import type { ZapAsset } from 'config/zapAsset';
-import { usePoolList } from 'hooks/zap/usePoolList';
+import useGetPools from 'hooks/zap/useGetPools';
 import type { WalletData } from 'store/wallet';
-import { getChainId } from 'utils/chainMapping';
 import AssetList from './AssetList';
 
 type Props = {
@@ -12,13 +11,13 @@ type Props = {
   selectedPool?: ZapAsset;
   wallet: WalletData;
   onSelectPool: (pool: ZapAsset) => void;
-  provider?: string;
+  provider: string;
   isConnectingWallet?: boolean;
 };
 
 const PoolList = (props: Props) => {
-  const { pools, loading, error } = usePoolList({
-    chainId: getChainId(props.selectedChainConfig.sdkName),
+  const { isFetching, pools } = useGetPools({
+    chain: props.selectedChainConfig.sdkName,
     provider: props.provider,
   });
 
@@ -32,8 +31,7 @@ const PoolList = (props: Props) => {
       provider={props.provider}
       isConnectingWallet={props.isConnectingWallet}
       assets={pools}
-      loading={loading}
-      error={error}
+      loading={isFetching}
     />
   );
 };

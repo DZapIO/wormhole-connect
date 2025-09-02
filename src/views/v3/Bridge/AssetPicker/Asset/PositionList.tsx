@@ -2,9 +2,8 @@ import React from 'react';
 
 import type { ChainConfig } from 'config/types';
 import type { ZapAsset, ZapPosition } from 'config/zapAsset';
-import { usePositionList } from 'hooks/zap/usePositionList';
+import useComputePosition from 'hooks/zap/useGetPositions';
 import type { WalletData } from 'store/wallet';
-import { getChainId } from 'utils/chainMapping';
 import AssetList from './AssetList';
 
 type Props = {
@@ -12,15 +11,15 @@ type Props = {
   selectedPosition?: ZapPosition;
   wallet: WalletData;
   onSelectPosition: (position: ZapAsset) => void;
-  provider?: string;
+  provider: string;
   isConnectingWallet?: boolean;
 };
 
 const PositionList = (props: Props) => {
-  const { positions, loading } = usePositionList({
-    chainId: getChainId(props.selectedChainConfig.sdkName) || 0,
-    provider: props.provider || '',
-    walletAddress: props.wallet?.address,
+  const { positions, isFetching } = useComputePosition({
+    chain: props.selectedChainConfig.sdkName,
+    provider: props.provider,
+    userAddress: props.wallet?.address,
   });
 
   return (
@@ -33,7 +32,7 @@ const PositionList = (props: Props) => {
       provider={props.provider}
       isConnectingWallet={props.isConnectingWallet}
       assets={positions}
-      loading={loading}
+      loading={isFetching}
     />
   );
 };

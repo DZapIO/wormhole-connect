@@ -22,11 +22,10 @@ type forEachCallback<T> = (name: string, route: SDKv2Route) => T;
 
 export const DEFAULT_ROUTES = [
   DZapRoute,
-  // routes.AutomaticCCTPRoute,
   routes.CCTPRoute,
-  // routes.AutomaticTokenBridgeRoute,
-  // routes.TokenBridgeRoute,
-  // routes.TBTCRoute,
+  routes.AutomaticTokenBridgeRoute,
+  routes.TokenBridgeRoute,
+  routes.TBTCRoute,
 ];
 
 export interface QuoteParams {
@@ -36,6 +35,7 @@ export interface QuoteParams {
   destToken: Token;
   amount: sdkAmount.Amount;
   nativeGas: number;
+  sender?: string;
   recipient?: string; // wallet may be undefined when not connected
 }
 
@@ -298,6 +298,7 @@ class QuoteCache {
           params.destChain,
           { nativeGas: params.nativeGas },
           params.recipient,
+          params.sender,
         )
         .then((result: QuoteResult) => {
           const pending = this.pending[key];
