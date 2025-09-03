@@ -9,7 +9,7 @@ import type { ZapPoolData } from 'zap/sdk';
 import { setDestToken } from 'store/transferInput';
 
 type Props = {
-  provider: string;
+  provider?: string;
   chain: Chain | undefined;
   limit?: number;
 };
@@ -61,7 +61,7 @@ const useGetPools = (props: Props): ReturnProps => {
   const [isFetching, setIsFetching] = useState(false);
 
   const computeDestTokens = useCallback(async () => {
-    if (isFetching) {
+    if (isFetching || !provider || !chain) {
       // If we're already fetching, don't fetch again
       return;
     }

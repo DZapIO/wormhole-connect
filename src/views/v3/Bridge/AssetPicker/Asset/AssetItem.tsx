@@ -1,18 +1,20 @@
 import { Box, ListItemButton, Typography, useTheme } from '@mui/material';
-import type { Chain } from '@wormhole-foundation/sdk';
+import type { Chain, amount as sdkAmount } from '@wormhole-foundation/sdk';
 import { isZapPosition, type ZapAsset } from 'config/zapAsset';
 import React from 'react';
 import { displayAddress } from 'utils';
 import AssetIcon from './AssetIcon';
+import TokenBalance from 'components/TokenBalance';
 
 interface Props {
   asset: ZapAsset;
   chain: Chain;
+  balance: sdkAmount.Amount | null;
   onClick: () => void;
   isSelected: boolean;
 }
 
-const AssetItem = ({ asset, chain, onClick, isSelected }: Props) => {
+const AssetItem = ({ asset, chain, onClick, isSelected, balance }: Props) => {
   const theme = useTheme();
   const isPosition = isZapPosition(asset.tuple);
 
@@ -73,8 +75,8 @@ const AssetItem = ({ asset, chain, onClick, isSelected }: Props) => {
   };
   // Get the primary stat (TVL for pools, amount USD for positions)
   const getPrimaryStat = () => {
-    if (isPosition && asset.zapPositionDetails?.amountUSD) {
-      return `$${Number(asset.zapPositionDetails.amountUSD).toLocaleString()}`;
+    if (isPosition && balance) {
+      return <TokenBalance balance={balance} />;
     }
     if (!isPosition && asset.zapTokenInfo?.tvl) {
       return `TVL: $${Number(asset.zapTokenInfo.tvl).toLocaleString()}`;

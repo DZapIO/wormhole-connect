@@ -60,6 +60,8 @@ import Routes from '../Bridge/Routes';
 import TxHistory from '../TxHistory';
 import TxHistoryWidget from '../TxHistory/Widget';
 import AssetPicker from './AssetPicker';
+import useGetPools from 'hooks/useGetPools';
+import useGetPoolBalances from 'hooks/useGetPoolBalances';
 
 export type ZapProps = {
   showHistory?: boolean;
@@ -148,7 +150,9 @@ function Zap(props: ZapProps) {
   const { sending: sendingWallet, receiving: receivingWallet } = useSelector(
     (state: RootState) => state.wallet,
   );
-
+  const [selectedProvider, setSelectedProvider] = useState<
+    string | undefined
+  >();
   const {
     fromChain: sourceChain,
     toChain: destChain,
@@ -301,6 +305,32 @@ function Zap(props: ZapProps) {
   const balances = useGetTokenBalances({
     source: sourceBalanceRequest,
     destination: destBalanceRequest,
+  });
+
+  const { isFetching: isPoolsFetching, pools } = useGetPools({
+    chain: sourceChain,
+    provider: selectedProvider,
+  });
+
+  const sourcePoolsBalanceRequest = useMemo(() => {
+    if (
+      sourceChain &&
+      sendingWallet?.address &&
+      selectedProvider &&
+      pools.length > 0
+    ) {
+      return {
+        chain: sourceChain,
+        wallet: sendingWallet,
+        poolList: pools,
+        provider: selectedProvider,
+      };
+    }
+    return undefined;
+  }, [sourceChain, sendingWallet, pools]);
+
+  const poolBalances = useGetPoolBalances({
+    source: sourcePoolsBalanceRequest,
   });
 
   // Validate amount
@@ -526,6 +556,7 @@ function Zap(props: ZapProps) {
         <Box ref={popoverAnchorRef}>
           <AssetPicker
             chain={sourceChain}
+            provider={selectedProvider}
             chainList={supportedSourceChains}
             token={sourceToken}
             tokenList={sourceTokens}
@@ -541,6 +572,11 @@ function Zap(props: ZapProps) {
             isFetchingBalances={balances.isFetching}
             anchorEl={popoverAnchorRef.current}
             amountValidation={amountValidation}
+            setProvider={setSelectedProvider}
+            poolBalances={poolBalances.source.balances}
+            poolList={pools}
+            isPoolsFetching={isPoolsFetching}
+            isPoolsBalancesFetching={poolBalances.isFetching}
           />
         </Box>
         {/* Swap source/destination assets button */}
@@ -548,6 +584,7 @@ function Zap(props: ZapProps) {
         {/* Destination asset picker */}
         <AssetPicker
           chain={destChain}
+          provider={selectedProvider}
           chainList={supportedDestChains}
           token={destToken}
           sourceToken={sourceToken}
@@ -568,6 +605,11 @@ function Zap(props: ZapProps) {
           isFetchingBalances={balances.isFetching}
           quote={destQuoteResult?.success ? destQuoteResult : undefined}
           anchorEl={popoverAnchorRef.current}
+          setProvider={(value) => setSelectedProvider(value)}
+          poolBalances={poolBalances.destination.balances}
+          poolList={pools}
+          isPoolsFetching={isPoolsFetching}
+          isPoolsBalancesFetching={false}
         />
       </Stack>
       <Box component="span" sx={styles.ctaContainer}>

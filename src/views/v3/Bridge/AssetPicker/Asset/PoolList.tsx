@@ -2,9 +2,9 @@ import React from 'react';
 
 import type { ChainConfig } from 'config/types';
 import type { ZapAsset } from 'config/zapAsset';
-import useGetPools from 'hooks/useGetPools';
 import type { WalletData } from 'store/wallet';
 import AssetList from './AssetList';
+import type { Balances } from 'utils/wallet';
 
 type Props = {
   selectedChainConfig: ChainConfig;
@@ -13,14 +13,13 @@ type Props = {
   onSelectPool: (pool: ZapAsset) => void;
   provider: string;
   isConnectingWallet?: boolean;
+  pools: ZapAsset[];
+  isPoolsFetching: boolean;
+  isPoolsBalancesFetching: boolean;
+  poolBalances?: Balances;
 };
 
 const PoolList = (props: Props) => {
-  const { isFetching, pools } = useGetPools({
-    chain: props.selectedChainConfig.sdkName,
-    provider: props.provider,
-  });
-
   return (
     <AssetList
       mode="pools"
@@ -30,8 +29,10 @@ const PoolList = (props: Props) => {
       onSelectAsset={props.onSelectPool}
       provider={props.provider}
       isConnectingWallet={props.isConnectingWallet}
-      assets={pools}
-      loading={isFetching}
+      assets={props.pools}
+      loading={props.isPoolsFetching}
+      isFetchingBalances={props.isPoolsBalancesFetching}
+      balances={props.poolBalances || {}}
     />
   );
 };

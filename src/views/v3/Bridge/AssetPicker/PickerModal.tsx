@@ -10,10 +10,8 @@ import type { ChainConfig } from 'config/types';
 import type { WalletData } from 'store/wallet';
 import type { Balances } from 'utils/wallet/types';
 import ChainList from 'views/v3/Bridge/AssetPicker/ChainList';
-import PoolList from 'views/v3/Bridge/AssetPicker/Asset/PoolList';
-import PositionList from 'views/v3/Bridge/AssetPicker/Asset/PositionList';
 import TokenList from 'views/v3/Bridge/AssetPicker/TokenList';
-import ProtocolList from './ProtocolList';
+import ProtocolTab from './ProtocolTab';
 
 interface AssetPickerPopoverProps {
   popupState: PopupState;
@@ -24,10 +22,14 @@ interface AssetPickerPopoverProps {
   setShowChainSearch: (value: boolean) => void;
   wallet: WalletData;
   sortedTokens: Token[];
+  sortedPoolList?: Token[];
   balances: Balances;
+  poolBalances?: Balances;
   isFetchingBalances: boolean;
   isConnectingWallet?: boolean;
   isFetchingTokens?: boolean;
+  isPoolsFetching?: boolean;
+  isPoolsBalancesFetching?: boolean;
   isSameChainSwap: boolean;
   token?: Token;
   sourceToken?: Token;
@@ -40,8 +42,8 @@ interface AssetPickerPopoverProps {
   selectedProvider?: string;
   showProviderSearch?: boolean;
   setShowProviderSearch?: (value: boolean) => void;
-  onProviderSelect?: (providerId: string) => void;
   showTabs?: boolean; // Controls whether to show tabs for Protocols
+  setProvider?: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
 function AssetPickerPopover({
@@ -53,10 +55,14 @@ function AssetPickerPopover({
   setShowChainSearch,
   wallet,
   sortedTokens,
+  sortedPoolList,
   balances,
+  poolBalances,
   isFetchingBalances,
   isConnectingWallet,
   isFetchingTokens,
+  isPoolsFetching,
+  isPoolsBalancesFetching,
   isSameChainSwap,
   token,
   sourceToken,
@@ -65,11 +71,11 @@ function AssetPickerPopover({
   setSearchQuery,
   onChainSelect,
   onTokenSelect,
+  setProvider,
   // Zap-specific props (optional)
   selectedProvider,
   showProviderSearch,
   setShowProviderSearch,
-  onProviderSelect,
   showTabs = false,
 }: AssetPickerPopoverProps) {
   const theme = useTheme();
@@ -162,51 +168,22 @@ function AssetPickerPopover({
               />
             )}
 
-            {activeTab === 1 &&
-              showProviderSearch !== undefined &&
-              setShowProviderSearch &&
-              onProviderSelect && (
-                <Box>
-                  <ProtocolList
-                    selectedProvider={selectedProvider}
-                    showSearch={showProviderSearch}
-                    setShowSearch={setShowProviderSearch}
-                    onProviderSelect={onProviderSelect}
-                    selectedChainConfig={chainConfig}
-                  />
-
-                  {/* Pools and Positions sections under Protocols */}
-                  {selectedProvider && chainConfig && !showProviderSearch && (
-                    <Box sx={{ mt: 2 }}>
-                      {/* Show pools for general browsing */}
-                      {!isSource && (
-                        <Box sx={{ mb: 2 }}>
-                          <PoolList
-                            selectedChainConfig={chainConfig}
-                            wallet={wallet}
-                            onSelectPool={onTokenSelect}
-                            provider={selectedProvider}
-                            isConnectingWallet={isConnectingWallet}
-                          />
-                        </Box>
-                      )}
-
-                      {/* Show positions only for connected wallet when isSource is true */}
-                      {wallet?.address && isSource && (
-                        <Box sx={{ mt: 2 }}>
-                          <PositionList
-                            selectedChainConfig={chainConfig}
-                            wallet={wallet}
-                            onSelectPosition={onTokenSelect}
-                            provider={selectedProvider}
-                            isConnectingWallet={isConnectingWallet}
-                          />
-                        </Box>
-                      )}
-                    </Box>
-                  )}
-                </Box>
-              )}
+            {activeTab === 1 && (
+              <ProtocolTab
+                selectedProvider={selectedProvider}
+                showProviderSearch={showProviderSearch}
+                setShowProviderSearch={setShowProviderSearch}
+                selectedChainConfig={chainConfig}
+                sortedPoolList={sortedPoolList}
+                wallet={wallet}
+                onTokenSelect={onTokenSelect}
+                isConnectingWallet={isConnectingWallet}
+                isPoolsFetching={isPoolsFetching}
+                isPoolsBalancesFetching={isPoolsBalancesFetching}
+                poolBalances={poolBalances}
+                setProvider={setProvider}
+              />
+            )}
           </Box>
         </>
       )}

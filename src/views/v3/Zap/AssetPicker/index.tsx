@@ -17,6 +17,7 @@ import type { ChainConfig } from 'config/types';
 import { ZapAssetType, type ZapAsset } from 'config/zapAsset';
 import { useTokens } from 'contexts/TokensContext';
 import type { AmountValidationResult } from 'hooks/useAmountValidation';
+import { usePositionList } from 'hooks/usePositionList';
 import { useTokenList } from 'hooks/useTokenList';
 import type { RootState } from 'store';
 import { isDisabledChain, setAmount } from 'store/transferInput';
@@ -26,7 +27,6 @@ import { formatWithCommas } from 'utils/formatNumber';
 import { OPACITY } from 'utils/style';
 import { TransferWallet } from 'utils/wallet';
 import type { Balances } from 'utils/wallet/types';
-import { getDefaultProvider } from 'utils/zap';
 import AmountInput from 'views/v3/Bridge/AmountInput';
 import AssetPickerDrawer from 'views/v3/Bridge/AssetPicker/PickerBottomSheet';
 import AssetPickerPopover from 'views/v3/Bridge/AssetPicker/PickerModal';
@@ -34,6 +34,7 @@ import WalletController from 'views/v3/Bridge/WalletConnector/Controller';
 
 type Props = {
   chain?: Chain | undefined;
+  provider: string | undefined;
   chainList: Array<ChainConfig>;
   token?: ZapAsset;
   sourceToken?: ZapAsset;
@@ -53,6 +54,11 @@ type Props = {
   amountValidation?: AmountValidationResult;
   quote?: routes.Quote<routes.Options> | undefined;
   anchorEl: HTMLElement | null;
+  setProvider: React.Dispatch<React.SetStateAction<string | undefined>>;
+  poolBalances: Balances;
+  poolList?: ZapAsset[];
+  isPoolsFetching: boolean;
+  isPoolsBalancesFetching: boolean;
 };
 
 function AssetPicker(props: Props) {
@@ -72,9 +78,7 @@ function AssetPicker(props: Props) {
 
   const [showChainSearch, setShowChainSearch] = useState(false);
   const [showProviderSearch, setShowProviderSearch] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState<
-    string | undefined
-  >();
+
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [amountInput, setAmountInput] = useState(
@@ -96,6 +100,18 @@ function AssetPicker(props: Props) {
     isSourceList: props.isSource, // true for source, false for destination
   });
 
+  const sortedPoolList = usePositionList({
+    poolList: props.poolList || [],
+    searchQuery,
+    selectedChainConfig: props.chain ? config.chains[props.chain] : ({} as any),
+    selectedToken: props.token,
+    sourceToken: props.sourceToken,
+    wallet: props.wallet,
+    balances: props.poolBalances,
+    isSourceList: props.isSource,
+  });
+
+  console.log('sortedPoolList', sortedPoolList);
   const popupState = usePopupState({
     variant: 'popover',
     popupId: 'asset-picker',
@@ -163,11 +179,6 @@ function AssetPicker(props: Props) {
     // Re-run only when popup/drawer state changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mobile, isDrawerOpen, popupState.isOpen]);
-
-  // Update selected provider when chain changes
-  useEffect(() => {
-    setSelectedProvider((prev) => getDefaultProvider(chainConfig, prev));
-  }, [chainConfig]);
 
   const selection = useMemo(() => {
     const tokenDisplay = props.token ? <>{props.token.display}</> : <>Select</>;
@@ -332,11 +343,6 @@ function AssetPicker(props: Props) {
     },
     [handleAmountChange, handleDebouncedAmountChange, props],
   );
-
-  const handleProviderSelect = useCallback((providerId: string) => {
-    setSelectedProvider(providerId);
-    setSearchQuery('');
-  }, []);
 
   // Clear the amount input value if the amount is reset outside of this component
   // This can happen if user swaps selected source and destination assets.
@@ -562,15 +568,18 @@ function AssetPicker(props: Props) {
           chainConfig={chainConfig}
           showChainSearch={showChainSearch}
           setShowChainSearch={setShowChainSearch}
-          selectedProvider={selectedProvider}
+          selectedProvider={props.provider}
           showProviderSearch={showProviderSearch}
           setShowProviderSearch={setShowProviderSearch}
           wallet={props.wallet}
           sortedTokens={sortedTokens}
+          sortedPoolList={sortedPoolList}
           balances={props.balances}
           isFetchingBalances={props.isFetchingBalances}
           isConnectingWallet={props.isConnectingWallet}
           isFetchingTokens={props.isFetchingTokens}
+          isPoolsFetching={props.isPoolsFetching}
+          isPoolsBalancesFetching={props.isPoolsBalancesFetching}
           isSameChainSwap={props.isSameChainSwap}
           token={props.token}
           sourceToken={props.sourceToken}
@@ -578,12 +587,12 @@ function AssetPicker(props: Props) {
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           onChainSelect={handleChainSelect}
-          onProviderSelect={handleProviderSelect}
           onTokenSelect={(token: ZapAsset) => {
             handleTokenSelect(token);
             setIsDrawerOpen(false);
           }}
           showTabs={true}
+          setProvider={props.setProvider}
         />
       ) : (
         <AssetPickerPopover
@@ -593,15 +602,18 @@ function AssetPicker(props: Props) {
           chainConfig={chainConfig}
           showChainSearch={showChainSearch}
           setShowChainSearch={setShowChainSearch}
-          selectedProvider={selectedProvider}
+          selectedProvider={props.provider}
           showProviderSearch={showProviderSearch}
           setShowProviderSearch={setShowProviderSearch}
           wallet={props.wallet}
           sortedTokens={sortedTokens}
+          sortedPoolList={sortedPoolList}
           balances={props.balances}
           isFetchingBalances={props.isFetchingBalances}
           isConnectingWallet={props.isConnectingWallet}
           isFetchingTokens={props.isFetchingTokens}
+          isPoolsFetching={props.isPoolsFetching}
+          isPoolsBalancesFetching={props.isPoolsBalancesFetching}
           isSameChainSwap={props.isSameChainSwap}
           token={props.token}
           sourceToken={props.sourceToken}
@@ -609,12 +621,12 @@ function AssetPicker(props: Props) {
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           onChainSelect={handleChainSelect}
-          onProviderSelect={handleProviderSelect}
           onTokenSelect={(token: ZapAsset) => {
             handleTokenSelect(token);
             popupState.close();
           }}
           showTabs={true}
+          setProvider={props.setProvider}
         />
       )}
     </Box>

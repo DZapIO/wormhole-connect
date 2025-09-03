@@ -9,13 +9,16 @@ import type { ZapAsset, ZapPosition } from 'config/zapAsset';
 import type { WalletData } from 'store/wallet';
 import SearchableList from 'views/v3/Bridge/AssetPicker/SearchableList';
 import AssetItem from './AssetItem';
+import type { Balances } from 'utils/wallet/types';
 
 type BaseProps = {
   selectedChainConfig: ChainConfig;
   wallet: WalletData;
-  provider?: string;
+  provider: string;
   isConnectingWallet?: boolean;
   assets: ZapAsset[];
+  balances: Balances;
+  isFetchingBalances: boolean;
   loading: boolean;
   error?: string | null;
 };
@@ -41,6 +44,9 @@ const AssetList = (props: Props) => {
   const isPoolMode = props.mode === 'pools';
   const assets = props.assets;
   const isFetching = props.loading;
+  console.log(assets);
+
+  const isFetchingBalances = props.isFetchingBalances;
 
   const emptyMessage = useMemo(() => {
     let message = '';
@@ -239,6 +245,7 @@ const AssetList = (props: Props) => {
               props.onSelectAsset(asset);
             }}
             isSelected={asset.address === props.selectedAsset?.address}
+            balance={props.balances?.[asset.key]?.balance}
           />
         );
       }}
@@ -252,7 +259,7 @@ const AssetList = (props: Props) => {
           <Typography width="100%" sx={styles.title}>
             {title}
           </Typography>
-          {isFetching ? (
+          {isFetching || isFetchingBalances ? (
             <CircularProgress
               sx={{ alignSelf: 'flex-end', marginBottom: '12px' }}
               size={14}
