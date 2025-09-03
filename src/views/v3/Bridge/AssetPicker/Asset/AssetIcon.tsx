@@ -1,9 +1,9 @@
-import React from 'react';
 import { Box, useTheme } from '@mui/material';
-import type { ZapUnderlyingToken } from '@dzapio/sdk';
+import React from 'react';
+import type { ZapUnderlyingAsset } from 'zap/sdk/types';
 
 interface Props {
-  underlyingAssets?: ZapUnderlyingToken[];
+  underlyingAssets?: ZapUnderlyingAsset[];
   size?: number;
   fallbackSymbol?: string;
 }

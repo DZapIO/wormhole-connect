@@ -1,20 +1,15 @@
 import config from 'config';
-import {
-  getZapAssetFromPool,
-  getZapAssetFromPosition,
-  type ZapAsset,
-} from 'config/zapAsset';
+import { getZapAssetFromPool, type ZapAsset } from 'config/zapAsset';
 import React, {
   createContext,
   useCallback,
   useContext,
   type ReactNode,
 } from 'react';
-import { type ZapPoolData, type ZapPositionData } from '../zap/sdk';
+import { type ZapPoolData } from '../zap/sdk';
 
 interface ZapContextType {
   getPool: (pool: ZapPoolData) => ZapAsset;
-  getPosition: (position: ZapPositionData) => ZapAsset;
 }
 
 export const ZapContext = createContext<ZapContextType | undefined>(undefined);
@@ -36,21 +31,10 @@ export const ZapProvider: React.FC<ZapProviderProps> = ({ children }) => {
     return zapAsset;
   }, []);
 
-  const getPosition = useCallback((position: ZapPositionData): ZapAsset => {
-    const zapAsset = getZapAssetFromPosition(position);
-
-    // don't check cache for positions
-    config.zapAssets.add(zapAsset);
-    config.zapAssets.persist();
-
-    return zapAsset;
-  }, []);
-
   return (
     <ZapContext.Provider
       value={{
         getPool,
-        getPosition,
       }}
     >
       {children}

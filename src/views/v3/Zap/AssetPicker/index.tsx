@@ -14,7 +14,7 @@ import Color from 'color';
 import AssetBadge from 'components/AssetBadge';
 import config from 'config';
 import type { ChainConfig } from 'config/types';
-import { isPool, type ZapAsset } from 'config/zapAsset';
+import { isZapAsset, type ZapAsset } from 'config/zapAsset';
 import { useTokens } from 'contexts/TokensContext';
 import type { AmountValidationResult } from 'hooks/useAmountValidation';
 import useGetPoolBalances from 'hooks/useGetPoolBalances';
@@ -145,7 +145,7 @@ function AssetPicker(props: Props) {
     if (
       props.isSource &&
       poolBalances.source.balances &&
-      isPool(props.token?.tuple)
+      isZapAsset(props.token?.tuple)
     ) {
       return poolBalances.source.balances[props.token?.key]?.balance;
     }
@@ -320,7 +320,11 @@ function AssetPicker(props: Props) {
     const tokenAmount = props.isSource
       ? amount
       : props.quote?.destinationToken.amount;
-    if (props.isSource && poolBalances.source.balances && isPool(props.token)) {
+    if (
+      props.isSource &&
+      poolBalances.source.balances &&
+      isZapAsset(props.token)
+    ) {
       return props.quote?.details?.amountUSD ?? null;
     }
     if (props.token && tokenAmount) {

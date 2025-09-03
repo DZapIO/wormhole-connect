@@ -1,10 +1,12 @@
 import { Box, ListItemButton, Typography, useTheme } from '@mui/material';
 import type { Chain, amount as sdkAmount } from '@wormhole-foundation/sdk';
+import TokenBalance from 'components/TokenBalance';
 import { type ZapAsset } from 'config/zapAsset';
+import TokenIcon from 'icons/TokenIcons';
 import React from 'react';
 import { displayAddress, getUSDFormat } from 'utils';
-import TokenBalance from 'components/TokenBalance';
-import TokenIcon from 'icons/TokenIcons';
+import { getFormattedAPR } from 'utils/zap';
+import AssetIcon from './AssetIcon';
 
 interface Props {
   isSource: boolean;
@@ -85,8 +87,8 @@ const AssetItem = ({
     if (balance && isSource) {
       return <TokenBalance balance={balance} />;
     }
-    if (asset.zapTokenInfo?.tvl && !isSource) {
-      return `TVL: ${getUSDFormat(Number(asset.zapTokenInfo?.tvl || 0))}`;
+    if (asset.zapPoolInfo?.tvl && !isSource) {
+      return `TVL: ${getUSDFormat(Number(asset.zapPoolInfo?.tvl || 0))}`;
     }
     return null;
   };
@@ -94,7 +96,11 @@ const AssetItem = ({
   return (
     <ListItemButton sx={styles.container} onClick={onClick} dense>
       <Box sx={styles.assetInfo}>
-        <TokenIcon icon={asset.icon} />
+        {asset.zapPoolInfo?.underlyingAssets?.length ? (
+          <AssetIcon underlyingAssets={asset.zapPoolInfo?.underlyingAssets} />
+        ) : (
+          <TokenIcon icon={asset.icon} />
+        )}
 
         <Box sx={styles.assetDetails}>
           <Typography sx={styles.assetName}>{asset.name}</Typography>
@@ -108,10 +114,7 @@ const AssetItem = ({
             <Typography sx={styles.primaryStat}>{getPrimaryStat()}</Typography>
           )}
           <Typography sx={styles.apy}>
-            APR:{' '}
-            {asset.zapTokenInfo?.apr
-              ? `${Number(asset.zapTokenInfo.apr).toFixed(2)}%`
-              : 'N/A'}
+            APR: {getFormattedAPR(asset.zapPoolInfo?.apr)}
           </Typography>
         </Box>
       </Box>

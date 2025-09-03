@@ -114,6 +114,6 @@ export function getUniqueProvidersFromPools(pools: ZapPoolData[]): string[] {
 /**
  * Format APR for display
  */
-export function formatAPR(apr: number): string {
-  return `${apr.toFixed(2)}%`;
+export function getFormattedAPR(apr?: number | string): string {
+  return apr && !isNaN(Number(apr)) ? `${Number(apr).toFixed(2)}%` : 'N/A';
 }

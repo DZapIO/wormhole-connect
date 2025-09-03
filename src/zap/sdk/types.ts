@@ -39,11 +39,20 @@ export interface ZapPoolData<D = any> {
   protocol: string;
   symbol: string;
   chain: Chain;
+  decimals: number;
+  underlyingAssets?: ZapUnderlyingAsset[];
   apr?: number;
   tvl?: number;
-  decimals: number;
   logo?: string;
   details?: D;
+}
+
+export interface ZapUnderlyingAsset {
+  address: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  logo?: string;
 }
 
 export interface ZapPositionData<D = any> {
@@ -55,6 +64,7 @@ export interface ZapPositionData<D = any> {
   decimals: number;
   userAddress: string;
   amount: Amount;
+  underlyingAssets?: ZapUnderlyingAsset[];
   logo?: string;
   amountUSD?: number;
   details?: D;

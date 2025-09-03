@@ -1,6 +1,7 @@
 import type { Chain, TokenId } from '@wormhole-foundation/sdk';
 import { isChain, UniversalAddress } from '@wormhole-foundation/sdk';
 import type { ZapPoolData, ZapPositionData } from 'zap/sdk';
+import type { ZapUnderlyingAsset } from 'zap/sdk/types';
 import type { TokenJson, TokenTuple } from './tokens';
 import {
   Token,
@@ -11,7 +12,8 @@ import {
 } from './tokens';
 import type { TokenIcon, WrappedTokenAddresses } from './types';
 
-export type ZapTokenInfo = {
+export type ZapPoolInfo = {
+  underlyingAssets?: ZapUnderlyingAsset[];
   protocol: string;
   apr: number;
   tvl?: string;
@@ -55,6 +57,7 @@ export function getZapAssetFromPool(pool: ZapPoolData): ZapAsset {
       protocol: pool.protocol,
       apr: pool.apr ?? 0,
       tvl: pool.tvl?.toString(),
+      underlyingAssets: pool.underlyingAssets,
     },
   );
 }
@@ -72,6 +75,7 @@ export function getZapAssetFromPosition(position: ZapPositionData): ZapAsset {
     {
       protocol: position.protocol,
       apr: position.details?.apr ?? 0,
+      underlyingAssets: position.underlyingAssets,
     },
     {
       nftId: position.details?.nftId,
@@ -79,7 +83,7 @@ export function getZapAssetFromPosition(position: ZapPositionData): ZapAsset {
   );
 }
 
-export function isPool(tuple: any): tuple is TokenTuple {
+export function isZapAsset(tuple: any): tuple is TokenTuple {
   if (!Array.isArray(tuple) || tuple.length !== 2 || !isChain(tuple[0])) {
     return false;
   }
@@ -91,7 +95,7 @@ export function isPool(tuple: any): tuple is TokenTuple {
 export function getZapAssetTuple(zapAsset: ZapAsset): TokenTuple {
   const zapAssetKey = getTupleKeyFromZapAssetFields({
     address: zapAsset.addressString,
-    ...zapAsset.zapTokenInfo,
+    ...zapAsset.zapPoolInfo,
   });
 
   return [zapAsset.chain, zapAssetKey];
@@ -121,7 +125,7 @@ export function isSameZapAsset(a: ZapAsset, b: ZapAsset): boolean {
   return (
     a.chain === b.chain &&
     a.addressString === b.addressString &&
-    a.zapTokenInfo?.protocol === b.zapTokenInfo?.protocol &&
+    a.zapPoolInfo?.protocol === b.zapPoolInfo?.protocol &&
     a.zapPositionDetails?.nftId === b.zapPositionDetails?.nftId
   );
 }
@@ -155,7 +159,7 @@ export function parseZapAssetKey(key: string): ZapAssetId {
 
 // JSON interface for ZapAsset serialization
 interface ZapAssetJson extends TokenJson {
-  zapTokenInfo?: ZapTokenInfo;
+  zapPoolInfo?: ZapPoolInfo;
   zapPositionDetails?: ZapPositionDetails;
 }
 
@@ -164,7 +168,7 @@ export type ZapAssetId = TokenId & {
   nftId?: string;
 };
 export class ZapAsset extends Token {
-  zapTokenInfo?: ZapTokenInfo;
+  zapPoolInfo?: ZapPoolInfo;
   zapPositionDetails?: ZapPositionDetails;
   constructor(
     chain: Chain,
@@ -175,7 +179,7 @@ export class ZapAsset extends Token {
     icon?: TokenIcon | string,
     tokenBridgeOriginalTokenId?: TokenId,
     coingeckoId?: string,
-    zapTokenInfo?: ZapTokenInfo,
+    zapPoolInfo?: ZapPoolInfo,
     zapPositionDetails?: ZapPositionDetails,
   ) {
     super(
@@ -188,7 +192,7 @@ export class ZapAsset extends Token {
       tokenBridgeOriginalTokenId,
       coingeckoId,
     );
-    this.zapTokenInfo = zapTokenInfo;
+    this.zapPoolInfo = zapPoolInfo;
     this.zapPositionDetails = zapPositionDetails;
   }
 
@@ -196,7 +200,7 @@ export class ZapAsset extends Token {
     return getZapAssetKey(
       this.chain,
       this.addressString,
-      this.zapTokenInfo?.protocol,
+      this.zapPoolInfo?.protocol,
       this.zapPositionDetails?.nftId,
     );
   }
@@ -206,7 +210,7 @@ export class ZapAsset extends Token {
       this.chain,
       getTupleKeyFromZapAssetFields({
         address: this.addressString,
-        protocol: this.zapTokenInfo?.protocol,
+        protocol: this.zapPoolInfo?.protocol,
         nftId: this.zapPositionDetails?.nftId,
       }),
     ];
@@ -221,7 +225,7 @@ export class ZapAsset extends Token {
       chain: this.chain,
       address: this.address,
       nftId: this.zapPositionDetails?.nftId,
-      protocol: this.zapTokenInfo?.protocol,
+      protocol: this.zapPoolInfo?.protocol,
     };
   }
 
@@ -237,7 +241,7 @@ export class ZapAsset extends Token {
         ? tokenIdToTuple(this.tokenBridgeOriginalTokenId)
         : undefined,
       coingeckoWebId: this.coingeckoWebId,
-      zapTokenInfo: this.zapTokenInfo,
+      zapPoolInfo: this.zapPoolInfo,
       zapPositionDetails: this.zapPositionDetails,
     };
   }
@@ -251,7 +255,7 @@ export class ZapAsset extends Token {
     icon,
     tokenBridgeOriginalTokenId,
     coingeckoWebId,
-    zapTokenInfo,
+    zapPoolInfo,
     zapPositionDetails,
   }: ZapAssetJson) {
     return new ZapAsset(
@@ -265,7 +269,7 @@ export class ZapAsset extends Token {
         ? tokenIdFromTuple(tokenBridgeOriginalTokenId)
         : undefined,
       coingeckoWebId,
-      zapTokenInfo,
+      zapPoolInfo,
       zapPositionDetails,
     );
   }
@@ -317,7 +321,7 @@ export class ZapAssetMapping<T extends ZapAsset> extends TokenMapping<T> {
       return this._mapping
         .get(firstArg.chain)
         ?.get(firstArg.address.toString());
-    } else if (isPool(firstArg)) {
+    } else if (isZapAsset(firstArg)) {
       return this._mapping.get(firstArg[0] as Chain)?.get(firstArg[1]);
     } else {
       const tokenId = parseZapAssetKey(firstArg);
@@ -330,7 +334,7 @@ export class ZapAssetMapping<T extends ZapAsset> extends TokenMapping<T> {
     if (!zapAssets) return [];
 
     return Array.from(zapAssets.values()).filter(
-      (asset: T) => asset.zapTokenInfo?.protocol === protocol,
+      (asset: T) => asset.zapPoolInfo?.protocol === protocol,
     );
   }
 }
@@ -340,7 +344,7 @@ export class ZapAssetCache extends ZapAssetMapping<ZapAsset> {
     const originalKey = getZapAssetKey(
       zapAsset.chain,
       zapAsset.addressString,
-      zapAsset.zapTokenInfo?.protocol,
+      zapAsset.zapPoolInfo?.protocol,
       zapAsset.zapPositionDetails?.nftId,
     );
     const original = this.get(originalKey);

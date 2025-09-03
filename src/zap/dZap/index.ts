@@ -108,6 +108,13 @@ export class DZapDataProvider implements ZapDataProvider<PoolD, PosD> {
       decimals: pool.decimals,
       logo: pool.underlyingAssets?.[0]?.logo,
       details: pool,
+      underlyingAssets: pool.underlyingAssets.map((asset) => ({
+        address: asset.address,
+        name: asset.name || '',
+        symbol: asset.symbol || '',
+        decimals: asset.decimals,
+        logo: asset.logo || '',
+      })),
     };
   };
 
@@ -131,6 +138,13 @@ export class DZapDataProvider implements ZapDataProvider<PoolD, PosD> {
         BigInt(position.amount || '0'),
         position.decimals,
       ),
+      underlyingAssets: position.underlyingAssets.map((asset) => ({
+        address: asset.address,
+        name: asset.name || '',
+        symbol: asset.symbol || '',
+        decimals: asset.decimals,
+        logo: asset.logo || '',
+      })),
       logo: position.underlyingAssets?.[0]?.logo || '',
       amountUSD: position.amountUSD
         ? parseFloat(position.amountUSD)

@@ -2,26 +2,25 @@ import type {
   Chain,
   ChainContext,
   Network,
-  TokenId as TokenId,
-  TransactionId,
   Signer,
+  TokenId,
+  TransactionId,
 } from '@wormhole-foundation/sdk';
 import {
-  Wormhole,
-  routes,
   chainToPlatform,
   isSameToken,
+  routes,
   TransferState,
+  Wormhole,
 } from '@wormhole-foundation/sdk';
 import type { Token } from 'config/tokens';
 
 import { amount as sdkAmount } from '@wormhole-foundation/sdk';
-import { AsyncCache } from 'utils/AsyncCache';
 import config, { getWormholeContextV2 } from 'config';
-import { sleep } from 'utils';
-import { isFrankensteinToken } from 'utils';
+import { isZapAsset } from 'config/zapAsset';
+import { isFrankensteinToken, sleep } from 'utils';
+import { AsyncCache } from 'utils/AsyncCache';
 import { isNttToken } from 'utils/ntt';
-import { isZapAssetId } from 'config/zapAsset';
 
 type Amount = sdkAmount.Amount;
 
@@ -133,18 +132,7 @@ export class SDKv2Route {
     if (isIlliquid) return [];
 
     const isSameChain = fromChain === toChain;
-    let cacheKey = `supportedDestTokens-${sourceToken.address}-${fromChain}-${toChain}`;
-
-    // TODO: we should not have to do this
-    if (this.IS_ZAP_ROUTE) {
-      const zapProvider =
-        destToken && isZapAssetId(destToken.tokenId)
-          ? destToken.tokenId.protocol
-          : undefined;
-      if (zapProvider) {
-        cacheKey += `-${zapProvider}`;
-      }
-    }
+    const cacheKey = `supportedDestTokens-${sourceToken.address}-${fromChain}-${toChain}`;
 
     const routeSupportedTokenFetcher = async () => {
       try {
@@ -160,10 +148,20 @@ export class SDKv2Route {
       }
     };
 
-    const destTokens = await this.tokenCache.requestWithCache(
-      cacheKey,
-      routeSupportedTokenFetcher,
-    );
+    let destTokens: TokenId[] = [];
+
+    // TODO: we should not have to do this
+    if (
+      this.IS_ZAP_ROUTE &&
+      (isZapAsset(sourceToken.tokenId) || isZapAsset(destToken?.tuple))
+    ) {
+      destTokens = await routeSupportedTokenFetcher();
+    } else {
+      destTokens = await this.tokenCache.requestWithCache(
+        cacheKey,
+        routeSupportedTokenFetcher,
+      );
+    }
 
     const filteredTokens = destTokens.filter((t) => {
       const token = config.tokens.get(t);
