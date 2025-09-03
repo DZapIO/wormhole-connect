@@ -168,7 +168,7 @@ export function buildConfig(
 
     routes: new RouteOperator(customConfig.routes),
 
-    zapDataProvider: new ZapDataAggregator(),
+    zapDataAggregator: new ZapDataAggregator(),
 
     // UI details
     ui: createUiConfig({ ...customConfig.ui }),

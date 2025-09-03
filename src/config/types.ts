@@ -189,7 +189,7 @@ export interface InternalConfig<N extends Network> {
 
   routes: RouteOperator;
 
-  zapDataProvider: ZapDataAggregator;
+  zapDataAggregator: ZapDataAggregator;
 
   // Callbacks
   triggerEvent: TriggerEventHandler;

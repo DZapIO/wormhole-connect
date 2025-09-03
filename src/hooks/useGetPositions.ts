@@ -30,7 +30,7 @@ const computePositionsForChainAndProvider = async (
   }
 
   // Both chains selected - fetch supported tokens from routes
-  const positionsResult = await config.zapDataProvider.getPositions({
+  const positionsResult = await config.zapDataAggregator.getPositions({
     chain,
     userAddress: userAddress,
     provider,

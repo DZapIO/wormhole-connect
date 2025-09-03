@@ -39,7 +39,7 @@ const computePoolsForChainAndProvider = async (
   }
 
   // Both chains selected - fetch supported tokens from routes
-  const poolsResult = await config.zapDataProvider.getPools({
+  const poolsResult = await config.zapDataAggregator.getPools({
     chain,
     provider,
     limit,
