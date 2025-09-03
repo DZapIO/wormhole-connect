@@ -20,10 +20,10 @@ import type {
 
 import type RouteOperator from 'routes/operator';
 import type { TransferInfo } from 'utils/sdkv2';
+import type ZapDataAggregator from 'zap/aggregator';
 import type { Token, TokenCache, TokenTuple } from './tokens';
 import type { UiConfig } from './ui';
-import type { ZapAssetCache, ZapAssetType } from './zapAsset';
-import type ZapDataAggregator from 'zap/aggregator';
+import type { ZapAssetCache } from './zapAsset';
 
 export * from './ui';
 
@@ -219,22 +219,6 @@ export type TokenConfig = {
     address: string;
   };
 };
-
-export type ZapAssetConfig = {
-  symbol: string;
-  name?: string;
-  decimals: number;
-  icon: string[] | string;
-  zapAssetId: {
-    chain: Chain;
-    address: string;
-    type: ZapAssetType;
-    provider?: string;
-    nftId?: string;
-  };
-};
-
-export type ZapAssetsConfig = { [key: string]: ZapAssetConfig };
 
 export type TokensConfig = { [key: string]: TokenConfig };
 

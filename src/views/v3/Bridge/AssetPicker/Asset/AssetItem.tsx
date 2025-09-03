@@ -1,12 +1,13 @@
 import { Box, ListItemButton, Typography, useTheme } from '@mui/material';
 import type { Chain, amount as sdkAmount } from '@wormhole-foundation/sdk';
-import { isZapPosition, type ZapAsset } from 'config/zapAsset';
+import { type ZapAsset } from 'config/zapAsset';
 import React from 'react';
-import { displayAddress } from 'utils';
-import AssetIcon from './AssetIcon';
+import { displayAddress, getUSDFormat } from 'utils';
 import TokenBalance from 'components/TokenBalance';
+import TokenIcon from 'icons/TokenIcons';
 
 interface Props {
+  isSource: boolean;
   asset: ZapAsset;
   chain: Chain;
   balance: sdkAmount.Amount | null;
@@ -14,9 +15,15 @@ interface Props {
   isSelected: boolean;
 }
 
-const AssetItem = ({ asset, chain, onClick, isSelected, balance }: Props) => {
+const AssetItem = ({
+  asset,
+  chain,
+  onClick,
+  isSelected,
+  balance,
+  isSource,
+}: Props) => {
   const theme = useTheme();
-  const isPosition = isZapPosition(asset.tuple);
 
   const styles = {
     container: {
@@ -75,11 +82,11 @@ const AssetItem = ({ asset, chain, onClick, isSelected, balance }: Props) => {
   };
   // Get the primary stat (TVL for pools, amount USD for positions)
   const getPrimaryStat = () => {
-    if (isPosition && balance) {
+    if (balance && isSource) {
       return <TokenBalance balance={balance} />;
     }
-    if (!isPosition && asset.zapTokenInfo?.tvl) {
-      return `TVL: $${Number(asset.zapTokenInfo.tvl).toLocaleString()}`;
+    if (asset.zapTokenInfo?.tvl && !isSource) {
+      return `TVL: ${getUSDFormat(Number(asset.zapTokenInfo?.tvl || 0))}`;
     }
     return null;
   };
@@ -87,10 +94,7 @@ const AssetItem = ({ asset, chain, onClick, isSelected, balance }: Props) => {
   return (
     <ListItemButton sx={styles.container} onClick={onClick} dense>
       <Box sx={styles.assetInfo}>
-        <AssetIcon
-          underlyingAssets={asset.zapTokenInfo?.underlyingAssets}
-          size={36}
-        />
+        <TokenIcon icon={asset.icon} />
 
         <Box sx={styles.assetDetails}>
           <Typography sx={styles.assetName}>{asset.name}</Typography>

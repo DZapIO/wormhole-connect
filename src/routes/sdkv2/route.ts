@@ -2,26 +2,24 @@ import type {
   Chain,
   ChainContext,
   Network,
-  TokenId as TokenId,
-  TransactionId,
   Signer,
+  TokenId,
+  TransactionId,
 } from '@wormhole-foundation/sdk';
 import {
-  Wormhole,
-  routes,
   chainToPlatform,
   isSameToken,
+  routes,
   TransferState,
+  Wormhole,
 } from '@wormhole-foundation/sdk';
 import type { Token } from 'config/tokens';
 
 import { amount as sdkAmount } from '@wormhole-foundation/sdk';
-import { AsyncCache } from 'utils/AsyncCache';
 import config, { getWormholeContextV2 } from 'config';
-import { sleep } from 'utils';
-import { isFrankensteinToken } from 'utils';
+import { isFrankensteinToken, sleep } from 'utils';
+import { AsyncCache } from 'utils/AsyncCache';
 import { isNttToken } from 'utils/ntt';
-import { isZapAssetId } from 'config/zapAsset';
 
 type Amount = sdkAmount.Amount;
 
@@ -29,7 +27,6 @@ type Amount = sdkAmount.Amount;
 export class SDKv2Route {
   // TODO: remove this
   IS_TOKEN_BRIDGE_ROUTE = false;
-  IS_ZAP_ROUTE = false;
 
   constructor(readonly rc: routes.RouteConstructor) {
     this.IS_TOKEN_BRIDGE_ROUTE = [
@@ -37,8 +34,6 @@ export class SDKv2Route {
       'AutomaticTokenBridge',
       'TokenBridgeExecutorRoute',
     ].includes(rc.meta.name);
-
-    this.IS_ZAP_ROUTE = ['DZap'].includes(rc.meta.name);
   }
 
   private tokenCache = new AsyncCache<TokenId[]>(24 * 60 * 60 * 1000); // 24 hour TTL
@@ -133,18 +128,7 @@ export class SDKv2Route {
     if (isIlliquid) return [];
 
     const isSameChain = fromChain === toChain;
-    let cacheKey = `supportedDestTokens-${sourceToken.address}-${fromChain}-${toChain}`;
-
-    // TODO: we should not have to do this
-    if (this.IS_ZAP_ROUTE) {
-      const zapProvider =
-        destToken && isZapAssetId(destToken.tokenId)
-          ? destToken.tokenId.provider
-          : undefined;
-      if (zapProvider) {
-        cacheKey += `-${zapProvider}`;
-      }
-    }
+    const cacheKey = `supportedDestTokens-${sourceToken.address}-${fromChain}-${toChain}`;
 
     const routeSupportedTokenFetcher = async () => {
       try {

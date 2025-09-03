@@ -14,9 +14,11 @@ import Color from 'color';
 import AssetBadge from 'components/AssetBadge';
 import config from 'config';
 import type { ChainConfig } from 'config/types';
-import { ZapAssetType, type ZapAsset } from 'config/zapAsset';
+import { isPool, type ZapAsset } from 'config/zapAsset';
 import { useTokens } from 'contexts/TokensContext';
 import type { AmountValidationResult } from 'hooks/useAmountValidation';
+import useGetPoolBalances from 'hooks/useGetPoolBalances';
+import useGetPools from 'hooks/useGetPools';
 import { usePositionList } from 'hooks/usePositionList';
 import { useTokenList } from 'hooks/useTokenList';
 import type { RootState } from 'store';
@@ -34,7 +36,6 @@ import WalletController from 'views/v3/Bridge/WalletConnector/Controller';
 
 type Props = {
   chain?: Chain | undefined;
-  provider: string | undefined;
   chainList: Array<ChainConfig>;
   token?: ZapAsset;
   sourceToken?: ZapAsset;
@@ -54,22 +55,13 @@ type Props = {
   amountValidation?: AmountValidationResult;
   quote?: routes.Quote<routes.Options> | undefined;
   anchorEl: HTMLElement | null;
-  setProvider: React.Dispatch<React.SetStateAction<string | undefined>>;
-  poolBalances: Balances;
-  poolList?: ZapAsset[];
-  isPoolsFetching: boolean;
-  isPoolsBalancesFetching: boolean;
 };
 
 function AssetPicker(props: Props) {
   const theme: any = useTheme();
   const dispatch = useDispatch();
   const mobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const {
-    amount,
-    token: zapToken,
-    fromChain,
-  } = useSelector((state: RootState) => state.transferInput);
+  const { amount } = useSelector((state: RootState) => state.transferInput);
   const { getTokenPrice } = useTokens();
 
   const chainConfig: ChainConfig | undefined = useMemo(() => {
@@ -77,7 +69,10 @@ function AssetPicker(props: Props) {
   }, [props.chain]);
 
   const [showChainSearch, setShowChainSearch] = useState(false);
-  const [showProviderSearch, setShowProviderSearch] = useState(false);
+  const [showProtocolSearch, setShowProtocolSearch] = useState(false);
+  const [selectedProtocol, setSelectedProtocol] = useState<
+    string | undefined
+  >();
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,32 +95,63 @@ function AssetPicker(props: Props) {
     isSourceList: props.isSource, // true for source, false for destination
   });
 
+  const { isFetching: isPoolsFetching, pools } = useGetPools({
+    chain: props.chain,
+    protocol: selectedProtocol,
+  });
+
+  const sourcePoolsBalanceRequest = useMemo(() => {
+    if (
+      props.chain &&
+      props.wallet.address &&
+      selectedProtocol &&
+      pools.length > 0
+    ) {
+      return {
+        chain: props.chain,
+        wallet: props.wallet,
+        poolList: pools,
+        protocol: selectedProtocol,
+      };
+    }
+    return undefined;
+  }, [props.chain, props.wallet, pools, selectedProtocol]);
+
+  const poolBalances = useGetPoolBalances({
+    source: sourcePoolsBalanceRequest,
+    destination: undefined,
+  });
+
   const sortedPoolList = usePositionList({
-    poolList: props.poolList || [],
+    poolList: pools || [],
     searchQuery,
     selectedChainConfig: props.chain ? config.chains[props.chain] : ({} as any),
     selectedToken: props.token,
     sourceToken: props.sourceToken,
     wallet: props.wallet,
-    balances: props.poolBalances,
+    balances: poolBalances.source.balances,
     isSourceList: props.isSource,
   });
 
-  console.log('sortedPoolList', sortedPoolList);
   const popupState = usePopupState({
     variant: 'popover',
     popupId: 'asset-picker',
   });
 
   const tokenBalance = useMemo(() => {
-    if (props.token?.zapPositionDetails) {
-      return props.token.zapPositionDetails.amount;
+    if (props.isSource && poolBalances.source.balances && isPool(props.token)) {
+      return poolBalances.source.balances[props.token?.key]?.balance;
     }
     if (props.isSource && props.balances && props.token) {
       return props.balances[props.token.key]?.balance;
     }
     return null;
-  }, [props.isSource, props.balances, props.token]);
+  }, [
+    props.isSource,
+    props.balances,
+    props.token,
+    poolBalances.source.balances,
+  ]);
 
   const tokenBalanceDisplay = useMemo(() => {
     if (!tokenBalance) {
@@ -158,7 +184,7 @@ function AssetPicker(props: Props) {
     if ((mobile && !isDrawerOpen) || (!mobile && !popupState.isOpen)) {
       setTimeout(() => {
         setShowChainSearch(false);
-        setShowProviderSearch(false);
+        setShowProtocolSearch(false);
       }, 300);
     }
   }, [isDrawerOpen, mobile, popupState.isOpen]);
@@ -287,7 +313,7 @@ function AssetPicker(props: Props) {
     const tokenAmount = props.isSource
       ? amount
       : props.quote?.destinationToken.amount;
-    if (props.token?.zapTokenInfo?.type === ZapAssetType.POOL) {
+    if (props.isSource && poolBalances.source.balances && isPool(props.token)) {
       return props.quote?.details?.amountUSD ?? null;
     }
     if (props.token && tokenAmount) {
@@ -301,6 +327,7 @@ function AssetPicker(props: Props) {
     props.token,
     amount,
     getTokenPrice,
+    poolBalances.source.balances,
   ]);
 
   const amountUSDValue =
@@ -320,7 +347,7 @@ function AssetPicker(props: Props) {
       dispatch(setAmount(newValue));
       setDebouncedAmountInput(newValue);
     },
-    [dispatch, amount, props.chain, props.token, zapToken, fromChain],
+    [dispatch],
   );
 
   const handleChainSelect = useCallback(
@@ -568,18 +595,19 @@ function AssetPicker(props: Props) {
           chainConfig={chainConfig}
           showChainSearch={showChainSearch}
           setShowChainSearch={setShowChainSearch}
-          selectedProvider={props.provider}
-          showProviderSearch={showProviderSearch}
-          setShowProviderSearch={setShowProviderSearch}
+          selectedProtocol={selectedProtocol}
+          showProtocolSearch={showProtocolSearch}
+          setShowProtocolSearch={setShowProtocolSearch}
           wallet={props.wallet}
           sortedTokens={sortedTokens}
           sortedPoolList={sortedPoolList}
           balances={props.balances}
+          poolBalances={poolBalances.source.balances}
           isFetchingBalances={props.isFetchingBalances}
           isConnectingWallet={props.isConnectingWallet}
           isFetchingTokens={props.isFetchingTokens}
-          isPoolsFetching={props.isPoolsFetching}
-          isPoolsBalancesFetching={props.isPoolsBalancesFetching}
+          isPoolsFetching={isPoolsFetching}
+          isPoolsBalancesFetching={poolBalances.isFetching}
           isSameChainSwap={props.isSameChainSwap}
           token={props.token}
           sourceToken={props.sourceToken}
@@ -592,7 +620,7 @@ function AssetPicker(props: Props) {
             setIsDrawerOpen(false);
           }}
           showTabs={true}
-          setProvider={props.setProvider}
+          setProtocol={setSelectedProtocol}
         />
       ) : (
         <AssetPickerPopover
@@ -602,18 +630,19 @@ function AssetPicker(props: Props) {
           chainConfig={chainConfig}
           showChainSearch={showChainSearch}
           setShowChainSearch={setShowChainSearch}
-          selectedProvider={props.provider}
-          showProviderSearch={showProviderSearch}
-          setShowProviderSearch={setShowProviderSearch}
+          selectedProtocol={selectedProtocol}
+          showProtocolSearch={showProtocolSearch}
+          setShowProtocolSearch={setShowProtocolSearch}
           wallet={props.wallet}
           sortedTokens={sortedTokens}
           sortedPoolList={sortedPoolList}
           balances={props.balances}
+          poolBalances={poolBalances.source.balances}
           isFetchingBalances={props.isFetchingBalances}
           isConnectingWallet={props.isConnectingWallet}
           isFetchingTokens={props.isFetchingTokens}
-          isPoolsFetching={props.isPoolsFetching}
-          isPoolsBalancesFetching={props.isPoolsBalancesFetching}
+          isPoolsFetching={isPoolsFetching}
+          isPoolsBalancesFetching={poolBalances.isFetching}
           isSameChainSwap={props.isSameChainSwap}
           token={props.token}
           sourceToken={props.sourceToken}
@@ -626,7 +655,7 @@ function AssetPicker(props: Props) {
             popupState.close();
           }}
           showTabs={true}
-          setProvider={props.setProvider}
+          setProtocol={setSelectedProtocol}
         />
       )}
     </Box>

@@ -9,10 +9,11 @@ import PoolList from 'views/v3/Bridge/AssetPicker/Asset/PoolList';
 import ProtocolList from './ProtocolList';
 import { getDefaultProvider } from 'utils/zap';
 
-interface ProtocolTabProps {
-  selectedProvider?: string;
-  showProviderSearch?: boolean;
-  setShowProviderSearch?: (value: boolean) => void;
+interface PoolsTabProps {
+  isSource: boolean;
+  selectedProtocol?: string;
+  showProtocolSearch?: boolean;
+  setShowProtocolSearch?: (value: boolean) => void;
   selectedChainConfig?: ChainConfig;
   sortedPoolList?: Token[];
   wallet: WalletData;
@@ -21,13 +22,14 @@ interface ProtocolTabProps {
   isPoolsFetching?: boolean;
   isPoolsBalancesFetching?: boolean;
   poolBalances?: Balances;
-  setProvider?: React.Dispatch<React.SetStateAction<string | undefined>>;
+  setProtocol?: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
-function ProtocolTab({
-  selectedProvider,
-  showProviderSearch,
-  setShowProviderSearch,
+function PoolsTab({
+  isSource,
+  selectedProtocol,
+  showProtocolSearch,
+  setShowProtocolSearch,
   selectedChainConfig,
   sortedPoolList,
   wallet,
@@ -36,27 +38,27 @@ function ProtocolTab({
   isPoolsFetching,
   isPoolsBalancesFetching,
   poolBalances,
-  setProvider,
-}: ProtocolTabProps) {
-  // Update selected provider when chain changes
+  setProtocol,
+}: PoolsTabProps) {
+  // Update selected protocol when chain changes
   useEffect(() => {
-    if (setProvider) {
-      setProvider((prev) => getDefaultProvider(selectedChainConfig, prev));
+    if (setProtocol) {
+      setProtocol((prev) => getDefaultProvider(selectedChainConfig, prev));
     }
-  }, [selectedChainConfig, setProvider]);
+  }, [selectedChainConfig, setProtocol]);
 
-  const handleProviderSelect = useCallback(
-    (providerId: string) => {
-      setProvider?.(providerId);
+  const handleProtocolSelect = useCallback(
+    (protocolId: string) => {
+      setProtocol?.(protocolId);
     },
-    [setProvider],
+    [setProtocol],
   );
 
   // Don't render if required props are not provided
   if (
-    showProviderSearch === undefined ||
-    !setShowProviderSearch ||
-    !setProvider
+    showProtocolSearch === undefined ||
+    !setShowProtocolSearch ||
+    !setProtocol
   ) {
     return null;
   }
@@ -64,24 +66,25 @@ function ProtocolTab({
   return (
     <Box>
       <ProtocolList
-        selectedProvider={selectedProvider}
-        showSearch={showProviderSearch}
-        setShowSearch={setShowProviderSearch}
-        onProviderSelect={handleProviderSelect}
+        selectedProtocol={selectedProtocol}
+        showSearch={showProtocolSearch}
+        setShowSearch={setShowProtocolSearch}
+        onProtocolSelect={handleProtocolSelect}
         selectedChainConfig={selectedChainConfig}
       />
 
       {/* Pools and Positions sections under Protocols */}
-      {selectedProvider && selectedChainConfig && !showProviderSearch && (
+      {selectedProtocol && selectedChainConfig && !showProtocolSearch && (
         <Box sx={{ mt: 2 }}>
           {/* Show pools for general browsing */}
           <Box sx={{ mb: 2 }}>
             <PoolList
+              isSource={isSource}
               selectedChainConfig={selectedChainConfig}
               pools={sortedPoolList || []}
               wallet={wallet}
               onSelectPool={onTokenSelect}
-              provider={selectedProvider}
+              provider={selectedProtocol}
               isConnectingWallet={isConnectingWallet}
               isPoolsFetching={Boolean(isPoolsFetching)}
               isPoolsBalancesFetching={Boolean(isPoolsBalancesFetching)}
@@ -94,4 +97,4 @@ function ProtocolTab({
   );
 }
 
-export default memo(ProtocolTab);
+export default memo(PoolsTab);

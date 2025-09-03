@@ -29,7 +29,7 @@ export class DZapDataProvider implements ZapDataProvider<PoolD, PosD> {
 
   async getPools(
     chain: Chain,
-    provider: string,
+    protocol: string,
     limit?: number,
   ): Promise<ZapPoolData<PoolD>[]> {
     try {
@@ -40,7 +40,7 @@ export class DZapDataProvider implements ZapDataProvider<PoolD, PosD> {
 
       const request: ZapPoolsRequest = {
         chainId,
-        provider,
+        provider: protocol,
         limit: limit || 100,
       };
 
@@ -53,7 +53,7 @@ export class DZapDataProvider implements ZapDataProvider<PoolD, PosD> {
 
   async getPositions(
     chain: Chain,
-    provider: string,
+    protocol: string,
     userAddress: string,
     limit?: number,
   ): Promise<ZapPositionData<PosD>[]> {
@@ -65,7 +65,7 @@ export class DZapDataProvider implements ZapDataProvider<PoolD, PosD> {
 
       const request: ZapPositionsRequest = {
         chainId,
-        provider,
+        provider: protocol,
         account: userAddress as HexString,
       };
 
@@ -82,12 +82,12 @@ export class DZapDataProvider implements ZapDataProvider<PoolD, PosD> {
       this.handleError(error, 'getPositions');
     }
   }
-  static isProviderSupported<N extends Network>(
+  static isProtocolSupported<N extends Network>(
     Network: N,
     chain: Chain,
-    provider: string,
+    protocol: string,
   ): boolean {
-    return dZapConfig.isProviderSupported(Network, chain, provider);
+    return dZapConfig.isProviderSupported(Network, chain, protocol);
   }
 
   /**
@@ -101,7 +101,7 @@ export class DZapDataProvider implements ZapDataProvider<PoolD, PosD> {
       address: pool.address,
       name: pool.name,
       symbol: pool.symbol,
-      provider: pool.provider,
+      protocol: pool.provider,
       chain: chain,
       apr: pool.apr,
       tvl: pool.tvl ? parseFloat(pool.tvl) : undefined,
@@ -123,7 +123,7 @@ export class DZapDataProvider implements ZapDataProvider<PoolD, PosD> {
       address: position.address,
       name: position.name,
       symbol: position.name,
-      provider: position.provider,
+      protocol: position.provider,
       chain: chain,
       decimals: position.decimals,
       userAddress: account,

@@ -11,7 +11,7 @@ import type { WalletData } from 'store/wallet';
 import type { Balances } from 'utils/wallet/types';
 import ChainList from 'views/v3/Bridge/AssetPicker/ChainList';
 import TokenList from 'views/v3/Bridge/AssetPicker/TokenList';
-import ProtocolTab from './ProtocolTab';
+import ProtocolTab from './PoolTab';
 
 interface AssetPickerPopoverProps {
   popupState: PopupState;
@@ -39,11 +39,11 @@ interface AssetPickerPopoverProps {
   onChainSelect: (value: Chain) => void;
   onTokenSelect: (value: Token) => void;
   // Zap-specific props (optional)
-  selectedProvider?: string;
-  showProviderSearch?: boolean;
-  setShowProviderSearch?: (value: boolean) => void;
+  selectedProtocol?: string;
+  showProtocolSearch?: boolean;
+  setShowProtocolSearch?: (value: boolean) => void;
   showTabs?: boolean; // Controls whether to show tabs for Protocols
-  setProvider?: React.Dispatch<React.SetStateAction<string | undefined>>;
+  setProtocol?: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
 function AssetPickerPopover({
@@ -71,17 +71,20 @@ function AssetPickerPopover({
   setSearchQuery,
   onChainSelect,
   onTokenSelect,
-  setProvider,
+  setProtocol,
   // Zap-specific props (optional)
-  selectedProvider,
-  showProviderSearch,
-  setShowProviderSearch,
+  selectedProtocol,
+  showProtocolSearch,
+  setShowProtocolSearch,
   showTabs = false,
 }: AssetPickerPopoverProps) {
   const theme = useTheme();
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState<'tokens' | 'pools'>('tokens');
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (
+    event: React.SyntheticEvent,
+    newValue: 'tokens' | 'pools',
+  ) => {
     setActiveTab(newValue);
   };
 
@@ -144,12 +147,12 @@ function AssetPickerPopover({
               },
             }}
           >
-            <Tab label="Tokens" />
-            <Tab label="Protocols" />
+            <Tab label="Tokens" value="tokens" />
+            <Tab label="Pools" value="pools" />
           </Tabs>
 
           <Box>
-            {activeTab === 0 && chainConfig && (
+            {activeTab === 'tokens' && chainConfig && (
               <TokenList
                 tokenList={sortedTokens}
                 balances={balances}
@@ -168,11 +171,12 @@ function AssetPickerPopover({
               />
             )}
 
-            {activeTab === 1 && (
+            {activeTab === 'pools' && (
               <ProtocolTab
-                selectedProvider={selectedProvider}
-                showProviderSearch={showProviderSearch}
-                setShowProviderSearch={setShowProviderSearch}
+                isSource={isSource}
+                selectedProtocol={selectedProtocol}
+                showProtocolSearch={showProtocolSearch}
+                setShowProtocolSearch={setShowProtocolSearch}
                 selectedChainConfig={chainConfig}
                 sortedPoolList={sortedPoolList}
                 wallet={wallet}
@@ -181,7 +185,7 @@ function AssetPickerPopover({
                 isPoolsFetching={isPoolsFetching}
                 isPoolsBalancesFetching={isPoolsBalancesFetching}
                 poolBalances={poolBalances}
-                setProvider={setProvider}
+                setProtocol={setProtocol}
               />
             )}
           </Box>

@@ -1,5 +1,6 @@
 import type { Chain } from '@wormhole-foundation/sdk';
 import config from 'config';
+import { getZapAssetKey } from 'config/zapAsset';
 import { DZapDataProvider } from './dZap';
 import { ZapDataProvider } from './sdk/provider';
 import type {
@@ -7,18 +8,17 @@ import type {
   ZapPoolData,
   ZapPositionData,
 } from './sdk/types';
-import { getZapAssetKey, ZapAssetType } from 'config/zapAsset';
 
 export interface ZapPoolResult {
   pools: ZapPoolData[];
-  provider: string;
+  protocol: string;
   chain: Chain;
   timestamp: Date;
 }
 
 export interface ZapPositionResult {
   positions: ZapPositionData[];
-  provider: string;
+  protocol: string;
   chain: Chain;
   userAddress: string;
   timestamp: Date;
@@ -33,13 +33,13 @@ export const DEFAULT_ZAP_PROVIDERS = [
 
 export interface ZapPoolParams {
   chain: Chain;
-  provider: string;
+  protocol: string;
   limit?: number;
 }
 
 export interface ZapPositionParams {
   chain: Chain;
-  provider: string;
+  protocol: string;
   userAddress: string;
   limit?: number;
 }
@@ -48,8 +48,7 @@ function getPositionKey(position: ZapPositionData): string {
   return getZapAssetKey(
     position.chain,
     position.address.toString(),
-    ZapAssetType.POSITION,
-    position.provider,
+    position.protocol,
     position.details?.nftId,
   );
 }
@@ -94,7 +93,7 @@ export default class ZapDataAggregator {
         const zapPoolResults = await route.getPools(
           config.network,
           params.chain,
-          params.provider,
+          params.protocol,
         );
 
         for (const pool of zapPoolResults) {
@@ -111,7 +110,7 @@ export default class ZapDataAggregator {
 
     return {
       pools,
-      provider: params.provider,
+      protocol: params.protocol,
       chain: params.chain,
       timestamp: new Date(),
     };
@@ -126,7 +125,7 @@ export default class ZapDataAggregator {
         const zapPositionResults = await route.getPositions(
           config.network,
           params.chain,
-          params.provider,
+          params.protocol,
           params.userAddress,
           params.limit,
         );
@@ -145,7 +144,7 @@ export default class ZapDataAggregator {
 
     return {
       positions,
-      provider: params.provider,
+      protocol: params.protocol,
       chain: params.chain,
       userAddress: params.userAddress,
       timestamp: new Date(),

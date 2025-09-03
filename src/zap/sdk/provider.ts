@@ -7,36 +7,36 @@ export class ZapDataProvider {
   isDataProviderSupported<N extends Network>(
     Network: N,
     chain: Chain,
-    provider: string,
+    protocol: string,
   ): boolean {
-    return this.pc.isProviderSupported(Network, chain, provider);
+    return this.pc.isProtocolSupported(Network, chain, protocol);
   }
 
   // Delegate to the provider instance methods
   async getPools(
     network: Network,
     chain: Chain,
-    provider: string,
+    protocol: string,
     limit?: number,
   ) {
-    if (!this.pc.isProviderSupported(network, chain, provider)) {
+    if (!this.pc.isProtocolSupported(network, chain, protocol)) {
       return [];
     }
     const providerInstance = new this.pc();
-    return providerInstance.getPools(chain, provider, limit);
+    return providerInstance.getPools(chain, protocol, limit);
   }
 
   async getPositions(
     network: Network,
     chain: Chain,
-    provider: string,
+    protocol: string,
     userAddress: string,
     limit?: number,
   ) {
-    if (!this.pc.isProviderSupported(network, chain, provider)) {
+    if (!this.pc.isProtocolSupported(network, chain, protocol)) {
       return [];
     }
     const providerInstance = new this.pc();
-    return providerInstance.getPositions(chain, provider, userAddress, limit);
+    return providerInstance.getPositions(chain, protocol, userAddress, limit);
   }
 }

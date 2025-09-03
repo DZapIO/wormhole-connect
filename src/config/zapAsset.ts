@@ -1,5 +1,4 @@
-import type { ZapPool, ZapPosition, ZapUnderlyingToken } from '@dzapio/sdk';
-import type { Chain, TokenId, amount } from '@wormhole-foundation/sdk';
+import type { Chain, TokenId } from '@wormhole-foundation/sdk';
 import { isChain, UniversalAddress } from '@wormhole-foundation/sdk';
 import type { ZapPoolData, ZapPositionData } from 'zap/sdk';
 import type { TokenJson, TokenTuple } from './tokens';
@@ -11,57 +10,30 @@ import {
   TokenMapping,
 } from './tokens';
 import type { TokenIcon, WrappedTokenAddresses } from './types';
-// Import types from the actual dzapio/sdk
-export type {
-  ZapChains,
-  ZapPool,
-  ZapPoolDetails,
-  ZapPoolDetailsRequest,
-  ZapPoolsRequest,
-  ZapPosition,
-  ZapPositionsRequest,
-} from '@dzapio/sdk';
 
 export type ZapTokenInfo = {
-  type: ZapAssetType;
-  provider: string;
-  underlyingAssets: ZapUnderlyingToken[];
+  protocol: string;
   apr: number;
   tvl?: string;
 };
 
 export type ZapPositionDetails = {
-  amount: amount.Amount;
-  amountUSD: string;
   nftId?: string;
 };
 
-// Asset type enum for UI purposes
-export enum ZapAssetType {
-  POOL = 'pool',
-  POSITION = 'position',
-}
-
-// Union type for zap data (positions or pools from SDK)
-export type ZapData = ZapPosition | ZapPool;
-
 const getZapAssetFieldsFromTupleKey = (key: string) => {
-  const [address, type, provider, nftId] = key.split('/');
-  return { address, type, provider, nftId };
+  const [address, protocol, nftId] = key.split('/');
+  return { address, protocol, nftId };
 };
 
 const getTupleKeyFromZapAssetFields = (fields: {
   address: string;
-  type?: ZapAssetType;
-  provider?: string;
+  protocol?: string;
   nftId?: string;
 }) => {
   const parts: string[] = [fields.address];
-  if (fields.type) {
-    parts.push(fields.type);
-  }
-  if (fields.provider) {
-    parts.push(fields.provider);
+  if (fields.protocol) {
+    parts.push(fields.protocol);
   }
   if (fields.nftId) {
     parts.push(fields.nftId);
@@ -80,9 +52,7 @@ export function getZapAssetFromPool(pool: ZapPoolData): ZapAsset {
     undefined,
     undefined,
     {
-      type: ZapAssetType.POOL,
-      provider: pool.provider,
-      underlyingAssets: pool.details?.underlyingAssets || [],
+      protocol: pool.protocol,
       apr: pool.apr ?? 0,
       tvl: pool.tvl?.toString(),
     },
@@ -100,39 +70,22 @@ export function getZapAssetFromPosition(position: ZapPositionData): ZapAsset {
     undefined,
     undefined,
     {
-      type: ZapAssetType.POSITION,
-      provider: position.provider,
-      underlyingAssets: position.details?.underlyingAssets || [],
+      protocol: position.protocol,
       apr: position.details?.apr ?? 0,
     },
     {
-      amount: position.amount,
-      amountUSD: position.amountUSD?.toString() || '',
       nftId: position.details?.nftId,
     },
   );
 }
 
-export function isZapPoolOrPositionTuple(tuple: any): tuple is TokenTuple {
+export function isPool(tuple: any): tuple is TokenTuple {
   if (!Array.isArray(tuple) || tuple.length !== 2 || !isChain(tuple[0])) {
     return false;
   }
   const [, key] = tuple;
-  const { type } = getZapAssetFieldsFromTupleKey(key);
-  return type === ZapAssetType.POSITION || type === ZapAssetType.POOL;
-}
-
-// Type guards for SDK data
-export function isZapPosition(asset: TokenTuple) {
-  const [, key] = asset;
-  const { type } = getZapAssetFieldsFromTupleKey(key);
-  return type === ZapAssetType.POSITION;
-}
-
-export function isZapPool(asset: TokenTuple) {
-  const [, key] = asset;
-  const { type } = getZapAssetFieldsFromTupleKey(key);
-  return type === ZapAssetType.POOL;
+  const { protocol } = getZapAssetFieldsFromTupleKey(key);
+  return protocol !== undefined;
 }
 
 export function getZapAssetTuple(zapAsset: ZapAsset): TokenTuple {
@@ -155,12 +108,11 @@ export function getTupleFromZapAssetId(zapAssetId: ZapAssetId): TokenTuple {
 
 export function getZapAssetIdFromTuple(tuple: TokenTuple): ZapAssetId {
   const [chain, key] = tuple;
-  const { type, provider, nftId, address } = getZapAssetFieldsFromTupleKey(key);
+  const { protocol, nftId, address } = getZapAssetFieldsFromTupleKey(key);
   return {
     address: new UniversalAddress(address),
     chain,
-    type: type as ZapAssetType,
-    provider,
+    protocol,
     nftId,
   };
 }
@@ -169,21 +121,9 @@ export function isSameZapAsset(a: ZapAsset, b: ZapAsset): boolean {
   return (
     a.chain === b.chain &&
     a.addressString === b.addressString &&
-    a.zapTokenInfo?.type === b.zapTokenInfo?.type &&
-    a.zapTokenInfo?.provider === b.zapTokenInfo?.provider &&
+    a.zapTokenInfo?.protocol === b.zapTokenInfo?.protocol &&
     a.zapPositionDetails?.nftId === b.zapPositionDetails?.nftId
   );
-}
-
-// Cache interfaces
-export interface ZapPositionsCache {
-  positions: ZapPosition[];
-  timestamp: Date;
-}
-
-export interface ZapPoolsCache {
-  pools: ZapPool[];
-  timestamp: Date;
 }
 
 // Check if localStorage is available
@@ -195,16 +135,14 @@ const ZAP_CACHE_VERSION = 1;
 export function getZapAssetKey(
   chain: Chain,
   address: string,
-  type?: ZapAssetType,
-  provider?: string,
+  protocol?: string,
   nftId?: string,
 ): string {
   return JSON.stringify([
     chain,
     getTupleKeyFromZapAssetFields({
       address,
-      type,
-      provider,
+      protocol,
       nftId,
     }),
   ]);
@@ -223,8 +161,7 @@ interface ZapAssetJson extends TokenJson {
 }
 
 export type ZapAssetId = TokenId & {
-  type?: ZapAssetType;
-  provider?: string;
+  protocol?: string;
   nftId?: string;
 };
 export class ZapAsset extends Token {
@@ -263,8 +200,7 @@ export class ZapAsset extends Token {
     return getZapAssetKey(
       this.chain,
       this.addressString,
-      this.zapTokenInfo?.type,
-      this.zapTokenInfo?.provider,
+      this.zapTokenInfo?.protocol,
       this.zapPositionDetails?.nftId,
     );
   }
@@ -274,8 +210,7 @@ export class ZapAsset extends Token {
       this.chain,
       getTupleKeyFromZapAssetFields({
         address: this.addressString,
-        type: this.zapTokenInfo?.type,
-        provider: this.zapTokenInfo?.provider,
+        protocol: this.zapTokenInfo?.protocol,
         nftId: this.zapPositionDetails?.nftId,
       }),
     ];
@@ -290,8 +225,7 @@ export class ZapAsset extends Token {
       chain: this.chain,
       address: this.address,
       nftId: this.zapPositionDetails?.nftId,
-      provider: this.zapTokenInfo?.provider,
-      type: this.zapTokenInfo?.type,
+      protocol: this.zapTokenInfo?.protocol,
     };
   }
 
@@ -352,10 +286,10 @@ export class ZapAssetMapping<T extends ZapAsset> extends TokenMapping<T> {
 
     const key = getTupleKeyFromZapAssetFields({
       address: token.address.toString(),
-      type: token.type,
-      provider: token.provider,
+      protocol: token.protocol,
       nftId: token.nftId,
     });
+    value.expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 5); // 5 hours
 
     this._mapping.get(token.chain)!.set(key, value);
     this.lastUpdate = new Date();
@@ -392,7 +326,7 @@ export class ZapAssetMapping<T extends ZapAsset> extends TokenMapping<T> {
       return this._mapping
         .get(firstArg.chain)
         ?.get(firstArg.address.toString());
-    } else if (isZapPoolOrPositionTuple(firstArg)) {
+    } else if (isPool(firstArg)) {
       return this._mapping.get(firstArg[0] as Chain)?.get(firstArg[1]);
     } else {
       const tokenId = parseZapAssetKey(firstArg);
@@ -400,16 +334,12 @@ export class ZapAssetMapping<T extends ZapAsset> extends TokenMapping<T> {
     }
   }
 
-  getPoolsForChainAndProvider(chain: Chain, provider: string): T[] {
+  getPoolsForChainAndProtocol(chain: Chain, protocol: string): T[] {
     const zapAssets = this._mapping.get(chain);
     if (!zapAssets) return [];
 
     return Array.from(zapAssets.values()).filter(
-      (asset: T) =>
-        asset.zapTokenInfo?.type === ZapAssetType.POOL &&
-        asset.zapTokenInfo?.provider === provider &&
-        asset?.expiresAt &&
-        asset?.expiresAt > new Date(),
+      (asset: T) => asset.zapTokenInfo?.protocol === protocol,
     );
   }
 }
@@ -419,8 +349,7 @@ export class ZapAssetCache extends ZapAssetMapping<ZapAsset> {
     const originalKey = getZapAssetKey(
       zapAsset.chain,
       zapAsset.addressString,
-      zapAsset.zapTokenInfo?.type,
-      zapAsset.zapTokenInfo?.provider,
+      zapAsset.zapTokenInfo?.protocol,
       zapAsset.zapPositionDetails?.nftId,
     );
     const original = this.get(originalKey);
@@ -429,11 +358,6 @@ export class ZapAssetCache extends ZapAssetMapping<ZapAsset> {
       zapAsset.name = original.name;
       zapAsset.symbol = original.symbol;
     }
-
-    const expiresAt = isZapPool(zapAsset.tuple)
-      ? new Date(Date.now() + 24 * 60 * 60 * 1000) // 1 day
-      : new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-    zapAsset.expiresAt = expiresAt;
     super.add(zapAsset.tokenId, zapAsset);
   }
 
@@ -550,5 +474,5 @@ export function buildZapAssetCache(
 }
 
 export function isZapAssetId(thing: any): thing is ZapAssetId {
-  return thing.chain && thing.address && thing.type && thing.provider;
+  return thing.chain && thing.address && thing.protocol;
 }

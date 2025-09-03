@@ -7,6 +7,7 @@ import AssetList from './AssetList';
 import type { Balances } from 'utils/wallet';
 
 type Props = {
+  isSource: boolean;
   selectedChainConfig: ChainConfig;
   selectedPool?: ZapAsset;
   wallet: WalletData;
@@ -22,7 +23,7 @@ type Props = {
 const PoolList = (props: Props) => {
   return (
     <AssetList
-      mode="pools"
+      isSource={props.isSource}
       selectedChainConfig={props.selectedChainConfig}
       selectedAsset={props.selectedPool}
       wallet={props.wallet}

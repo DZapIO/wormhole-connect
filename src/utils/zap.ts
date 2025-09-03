@@ -107,7 +107,7 @@ export function searchPositions(
  */
 export function getUniqueProvidersFromPools(pools: ZapPoolData[]): string[] {
   const providers = new Set<string>();
-  pools.forEach((pool) => providers.add(pool.provider));
+  pools.forEach((pool) => providers.add(pool.protocol));
   return Array.from(providers);
 }
 

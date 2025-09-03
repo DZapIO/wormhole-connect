@@ -5,13 +5,14 @@ import Typography from '@mui/material/Typography';
 import React, { useMemo, useState } from 'react';
 
 import type { ChainConfig } from 'config/types';
-import type { ZapAsset, ZapPosition } from 'config/zapAsset';
+import type { ZapAsset } from 'config/zapAsset';
 import type { WalletData } from 'store/wallet';
 import SearchableList from 'views/v3/Bridge/AssetPicker/SearchableList';
 import AssetItem from './AssetItem';
 import type { Balances } from 'utils/wallet/types';
 
-type BaseProps = {
+type Props = {
+  isSource: boolean;
   selectedChainConfig: ChainConfig;
   wallet: WalletData;
   provider: string;
@@ -21,37 +22,23 @@ type BaseProps = {
   isFetchingBalances: boolean;
   loading: boolean;
   error?: string | null;
-};
-
-type PoolModeProps = BaseProps & {
-  mode: 'pools';
+  onSelectAsset: (asset: ZapAsset) => void;
   selectedAsset?: ZapAsset;
-  onSelectAsset: (pool: ZapAsset) => void;
 };
-
-type PositionModeProps = BaseProps & {
-  mode: 'positions';
-  selectedAsset?: ZapPosition;
-  onSelectAsset: (position: ZapAsset) => void;
-};
-
-type Props = PoolModeProps | PositionModeProps;
 
 const AssetList = (props: Props) => {
   const theme = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
 
-  const isPoolMode = props.mode === 'pools';
   const assets = props.assets;
   const isFetching = props.loading;
-  console.log(assets);
 
   const isFetchingBalances = props.isFetchingBalances;
 
   const emptyMessage = useMemo(() => {
     let message = '';
 
-    if (isPoolMode) {
+    if (props.isSource) {
       if (!props.wallet?.address) {
         message = 'Connect wallet to see available pools';
       } else {
@@ -73,17 +60,17 @@ const AssetList = (props: Props) => {
       </Typography>
     );
   }, [
-    isPoolMode,
+    props.isSource,
     props.wallet?.address,
     props.isConnectingWallet,
     theme.palette.grey.A400,
   ]);
 
-  const placeholder = isPoolMode
+  const placeholder = props.isSource
     ? 'Search for a pool'
     : 'Search for a position';
-  const title = isPoolMode ? 'Select a pool' : 'Select a position';
-  const listTitle = isPoolMode
+  const title = props.isSource ? 'Select a pool' : 'Select a position';
+  const listTitle = props.isSource
     ? `Pools on ${props.selectedChainConfig.displayName}`
     : `Your Positions on ${props.selectedChainConfig.displayName}`;
 
@@ -117,7 +104,7 @@ const AssetList = (props: Props) => {
 
   // Determine the current state of the list
   const listState = useMemo(() => {
-    if (isPoolMode) {
+    if (props.isSource) {
       // Currently fetching initial data
       if (isFetching) {
         return 'loading';
@@ -155,7 +142,7 @@ const AssetList = (props: Props) => {
       return 'ready';
     }
   }, [
-    isPoolMode,
+    props.isSource,
     isFetching,
     assets.length,
     props.wallet?.address,
@@ -166,7 +153,7 @@ const AssetList = (props: Props) => {
   const shouldShowEmptyMessage = listState === 'empty';
 
   const filterFn = useMemo(() => {
-    if (isPoolMode) {
+    if (props.isSource) {
       return (asset: ZapAsset, query: string) => {
         if (query.length === 0) return true;
 
@@ -199,13 +186,13 @@ const AssetList = (props: Props) => {
         return false;
       };
     }
-  }, [isPoolMode]);
+  }, [props.isSource]);
 
   const searchList = (
     <SearchableList<ZapAsset>
       searchPlaceholder={placeholder}
       sx={styles.list}
-      dataTestId={`${props.mode}-search-list`}
+      dataTestId={`${props.isSource ? 'pool' : 'position'}-search-list`}
       searchQuery={searchQuery}
       listTitle={
         shouldShowEmptyMessage ? (
@@ -238,11 +225,12 @@ const AssetList = (props: Props) => {
       renderFn={(asset: ZapAsset) => {
         return (
           <AssetItem
+            isSource={props.isSource}
             key={asset.address?.toString() || asset.name}
             asset={asset}
             chain={props.selectedChainConfig.sdkName}
             onClick={() => {
-              props.onSelectAsset(asset);
+              props.onSelectAsset?.(asset);
             }}
             isSelected={asset.address === props.selectedAsset?.address}
             balance={props.balances?.[asset.key]?.balance}

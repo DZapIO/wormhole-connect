@@ -1,11 +1,9 @@
 import { amount as sdkAmount } from '@wormhole-foundation/sdk';
 import config from 'config';
-import type { Token } from 'config/tokens';
-import { tokenKey } from 'config/tokens';
 import type { ChainConfig } from 'config/types';
 import type { ZapAsset } from 'config/zapAsset';
 import { getZapAssetKey, isSameZapAsset } from 'config/zapAsset';
-import { calculateUSDPriceRaw } from 'utils';
+import type { PoolBalances } from 'hooks/usePositionList';
 
 export const getPoolPreferenceScore = (
   token: ZapAsset,
@@ -17,18 +15,6 @@ export const getPoolPreferenceScore = (
   }
   // The rest is all the same as far as preference
   return 0;
-};
-
-export const calculateTokenUSDBalance = (
-  token: ZapAsset,
-  balances: Record<string, { balance: any }>,
-  getTokenPrice: (token: Token) => number | undefined,
-): number => {
-  const balance = balances[tokenKey(token)];
-  if (!balance || !balance.balance) {
-    return 0;
-  }
-  return calculateUSDPriceRaw(getTokenPrice, balance.balance, token) ?? 0;
 };
 
 export const applyPoolSearch = (
@@ -70,8 +56,7 @@ export const applyPoolSearch = (
 export const sortPoolsByPreference = (
   tokens: ZapAsset[],
   selectedToken: ZapAsset | undefined,
-  balances: Record<string, { balance: any }>,
-  getTokenPrice: (token: Token) => number | undefined,
+  balances: PoolBalances,
 ): ZapAsset[] => {
   return tokens.sort((a, b) => {
     const scoreA = getPoolPreferenceScore(a, selectedToken);
@@ -79,8 +64,8 @@ export const sortPoolsByPreference = (
     if (scoreA > scoreB) return -1;
     if (scoreB > scoreA) return 1;
 
-    const balanceA = calculateTokenUSDBalance(a, balances, getTokenPrice);
-    const balanceB = calculateTokenUSDBalance(b, balances, getTokenPrice);
+    const balanceA = Number(balances[a.key]?.amountUSD || 0);
+    const balanceB = Number(balances[b.key]?.amountUSD || 0);
 
     if (balanceA !== balanceB) {
       return balanceB - balanceA;
@@ -104,7 +89,7 @@ export const applyCustomPoolSupport = (
 
 export const filterPoolsByBalance = (
   tokens: ZapAsset[],
-  balances: Record<string, { balance: any }>,
+  balances: PoolBalances,
   walletAddress?: string,
 ): ZapAsset[] => {
   if (!walletAddress) return tokens;
@@ -115,11 +100,11 @@ export const filterPoolsByBalance = (
         getZapAssetKey(
           t.chain,
           t.addressString,
-          t.tokenId?.type,
-          t.tokenId?.provider,
-          t.tokenId.nftId,
+          t.tokenId?.protocol,
+          t.tokenId?.nftId,
         )
       ]?.balance;
-    return bal && sdkAmount.units(bal) > 0;
+
+    return bal && sdkAmount.units(bal) > 0n;
   });
 };

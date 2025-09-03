@@ -18,7 +18,7 @@ import { Contract } from 'ethers';
 import type { SuiClient } from '@mysten/sui/client';
 import type { Token, TokenTuple } from 'config/tokens';
 import type { ZapAsset } from 'config/zapAsset';
-import { isZapPoolOrPositionTuple } from 'config/zapAsset';
+import { isPool } from 'config/zapAsset';
 interface TokenMetadataFromRpc {
   symbol: string;
   name: string;
@@ -150,7 +150,7 @@ export const findTokenBySymbol = (
 export const getTokenFromTuple = (
   tokenTuple: TokenTuple,
 ): Token | ZapAsset | undefined => {
-  if (isZapPoolOrPositionTuple(tokenTuple)) {
+  if (isPool(tokenTuple)) {
     return config.zapAssets.get(tokenTuple);
   }
   const regularToken = config.tokens.get(tokenTuple);

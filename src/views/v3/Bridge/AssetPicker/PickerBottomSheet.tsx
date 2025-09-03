@@ -11,7 +11,7 @@ import type { WalletData } from 'store/wallet';
 import type { Balances } from 'utils/wallet/types';
 import ChainList from 'views/v3/Bridge/AssetPicker/ChainList';
 import TokenList from 'views/v3/Bridge/AssetPicker/TokenList';
-import ProtocolTab from './ProtocolTab';
+import ProtocolTab from './PoolTab';
 
 interface AssetPickerDrawerProps {
   isDrawerOpen: boolean;
@@ -39,11 +39,11 @@ interface AssetPickerDrawerProps {
   onChainSelect: (value: Chain) => void;
   onTokenSelect: (value: Token) => void;
   // Zap-specific props (optional)
-  selectedProvider?: string;
-  showProviderSearch?: boolean;
-  setShowProviderSearch?: (value: boolean) => void;
+  selectedProtocol?: string;
+  showProtocolSearch?: boolean;
+  setShowProtocolSearch?: (value: boolean) => void;
   showTabs?: boolean; // Controls whether to show tabs for Protocols
-  setProvider?: React.Dispatch<React.SetStateAction<string | undefined>>;
+  setProtocol?: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
 function AssetPickerDrawer({
@@ -72,18 +72,21 @@ function AssetPickerDrawer({
   onChainSelect,
   onTokenSelect,
   // Zap-specific props (optional)
-  selectedProvider,
-  showProviderSearch,
-  setShowProviderSearch,
+  selectedProtocol,
+  showProtocolSearch,
+  setShowProtocolSearch,
   showTabs = false,
-  setProvider,
+  setProtocol,
 }: AssetPickerDrawerProps) {
   const theme = useTheme();
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState<'tokens' | 'pools'>('tokens');
 
   // Debug logging
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (
+    event: React.SyntheticEvent,
+    newValue: 'tokens' | 'pools',
+  ) => {
     setActiveTab(newValue);
   };
 
@@ -154,7 +157,7 @@ function AssetPickerDrawer({
 
           {/* Tab Content */}
           <Box sx={{ padding: 2, flex: 1, overflow: 'auto' }}>
-            {activeTab === 0 && chainConfig && (
+            {activeTab === 'tokens' && chainConfig && (
               <TokenList
                 tokenList={sortedTokens}
                 balances={balances}
@@ -173,11 +176,12 @@ function AssetPickerDrawer({
               />
             )}
 
-            {activeTab === 1 && (
+            {activeTab === 'pools' && (
               <ProtocolTab
-                selectedProvider={selectedProvider}
-                showProviderSearch={showProviderSearch}
-                setShowProviderSearch={setShowProviderSearch}
+                isSource={isSource}
+                selectedProtocol={selectedProtocol}
+                showProtocolSearch={showProtocolSearch}
+                setShowProtocolSearch={setShowProtocolSearch}
                 selectedChainConfig={chainConfig}
                 sortedPoolList={sortedPoolList}
                 wallet={wallet}
@@ -186,7 +190,7 @@ function AssetPickerDrawer({
                 isPoolsFetching={isPoolsFetching}
                 isPoolsBalancesFetching={isPoolsBalancesFetching}
                 poolBalances={poolBalances}
-                setProvider={setProvider}
+                setProtocol={setProtocol}
               />
             )}
           </Box>

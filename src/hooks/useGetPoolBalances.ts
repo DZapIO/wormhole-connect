@@ -14,7 +14,7 @@ export interface ChainBalanceRequest {
   chain: Chain;
   wallet: WalletData;
   poolList: ZapAsset[];
-  provider: string;
+  protocol: string;
 }
 
 // Map of chain+wallet -> balances
@@ -27,7 +27,7 @@ const MAX_TOKENS_TO_PROCESS = 100;
 const getRequestKey = (chain: Chain, wallet: WalletData) =>
   `${chain}-${wallet.address}`;
 
-interface UseGetTokenBalancesParams {
+interface UseGetPoolBalancesParams {
   source?: ChainBalanceRequest;
   destination?: ChainBalanceRequest;
 }
@@ -36,7 +36,7 @@ interface ChainBalanceResult {
   balances: Balances;
 }
 
-interface UseGetTokenBalancesResult {
+interface UseGetPoolBalancesResult {
   isFetching: boolean;
   source: ChainBalanceResult;
   destination: ChainBalanceResult;
@@ -45,7 +45,7 @@ interface UseGetTokenBalancesResult {
 const useGetPoolBalances = ({
   source,
   destination,
-}: UseGetTokenBalancesParams): UseGetTokenBalancesResult => {
+}: UseGetPoolBalancesParams): UseGetPoolBalancesResult => {
   const [balances, setBalances] = useState<BalanceMap>({});
   const [fetchingKeys, setFetchingKeys] = useState<Set<string>>(new Set());
 
@@ -100,7 +100,7 @@ const useGetPoolBalances = ({
       chain: Chain,
       wallet: WalletData,
       tokens: ZapAsset[],
-      provider: string,
+      protocol: string,
     ): Promise<Balances> => {
       const chainConfig = config.chains[chain];
       if (
@@ -132,7 +132,7 @@ const useGetPoolBalances = ({
         const positionsResult = await config.zapDataAggregator.getPositions({
           chain,
           userAddress: wallet.address,
-          provider,
+          protocol,
           limit: MAX_TOKENS_TO_PROCESS,
         });
 
@@ -204,7 +204,7 @@ const useGetPoolBalances = ({
               request.chain,
               request.wallet,
               request.poolList,
-              request.provider,
+              request.protocol,
             );
             return { key, balances };
           }),
@@ -249,10 +249,10 @@ const useGetPoolBalances = ({
   }, [
     source?.chain,
     source?.wallet?.address,
-    source?.provider,
+    source?.protocol,
     destination?.chain,
     destination?.wallet?.address,
-    destination?.provider,
+    destination?.protocol,
   ]);
 
   // Extract results for source and destination

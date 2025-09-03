@@ -15,20 +15,20 @@ import PlusIcon from 'icons/Plus';
 import SearchableList from 'views/v3/Bridge/AssetPicker/SearchableList';
 
 type Props = {
-  selectedProvider?: string;
+  selectedProtocol?: string;
   selectedChainConfig?: ChainConfig;
   showSearch: boolean;
   setShowSearch: (value: boolean) => void;
-  onProviderSelect: (providerId: string) => void;
+  onProtocolSelect: (protocolId: string) => void;
 };
 
 const SHORT_LIST_SIZE = 7;
 
 function ProtocolList(props: Props) {
   const theme = useTheme();
-  const [providerSearchQuery, setProviderSearchQuery] = useState('');
+  const [protocolSearchQuery, setProtocolSearchQuery] = useState('');
 
-  const providers = useMemo(() => {
+  const protocols = useMemo(() => {
     return config.protocols;
   }, [config]);
 
@@ -117,7 +117,7 @@ function ProtocolList(props: Props) {
     [theme],
   );
 
-  const { selectedProvider, showSearch, setShowSearch, onProviderSelect } =
+  const { selectedProtocol, showSearch, setShowSearch, onProtocolSelect } =
     props;
 
   // Get supported protocols for the selected chain
@@ -126,48 +126,48 @@ function ProtocolList(props: Props) {
 
     const chain = props.selectedChainConfig?.sdkName;
     if (!chain) return [];
-    return Object.values(providers).filter((provider) =>
-      provider.supportedChains.includes(chain),
+    return Object.values(protocols).filter((protocol) =>
+      protocol?.supportedChains.includes(chain),
     );
-  }, [props.selectedChainConfig, providers]);
+  }, [props.selectedChainConfig, protocols]);
 
   // Convert supported protocols to array for easier manipulation
-  const providerList = useMemo(() => {
-    return supportedProtocols.map((provider) => ({
-      ...provider,
-      id: provider.id,
+  const protocolList = useMemo(() => {
+    return supportedProtocols.map((protocol) => ({
+      ...protocol,
+      id: protocol.id,
     }));
-  }, [supportedProtocols, providers]);
+  }, [supportedProtocols, protocols]);
 
   const topProviders = useMemo(() => {
-    const allProviders = providerList ?? [];
+    const allProtocols = protocolList ?? [];
 
     // Find the selected provider in supported providers
-    const selectedProviderIndex = allProviders.findIndex((provider) => {
-      return provider.id === selectedProvider;
+    const selectedProviderIndex = allProtocols.findIndex((protocol) => {
+      return protocol.id === selectedProtocol;
     });
     // If the selected provider is outside the top list, we add it to the top;
     // otherwise we do not change its index in the top list
     if (
-      selectedProvider &&
+      selectedProtocol &&
       selectedProviderIndex &&
       selectedProviderIndex >= SHORT_LIST_SIZE
     ) {
-      const selectedProviderObj = allProviders.find(
-        (p) => p.id === selectedProvider,
+      const selectedProtocolObj = allProtocols.find(
+        (p) => p.id === selectedProtocol,
       );
-      if (selectedProviderObj) {
+      if (selectedProtocolObj) {
         return [
-          selectedProviderObj,
-          ...allProviders.slice(0, SHORT_LIST_SIZE - 1),
+          selectedProtocolObj,
+          ...allProtocols.slice(0, SHORT_LIST_SIZE - 1),
         ];
       }
     }
 
-    return allProviders.slice(0, SHORT_LIST_SIZE);
-  }, [providerList, selectedProvider]);
+    return allProtocols.slice(0, SHORT_LIST_SIZE);
+  }, [protocolList, selectedProtocol]);
 
-  const showMoreButton = (providerList?.length ?? 0) > SHORT_LIST_SIZE;
+  const showMoreButton = (protocolList?.length ?? 0) > SHORT_LIST_SIZE;
 
   const shortList = useMemo(() => {
     return (
@@ -177,17 +177,17 @@ function ProtocolList(props: Props) {
         data-testid="provider-short-list"
         sx={styles.shortList}
       >
-        {topProviders.map((provider) => (
-          <Tooltip key={provider.id} title={provider.name}>
+        {topProviders.map((protocol) => (
+          <Tooltip key={protocol.id} title={protocol.name}>
             <ListItemButton
-              selected={selectedProvider === provider.id}
+              selected={selectedProtocol === protocol.id}
               sx={styles.chainButton}
-              data-testid={`provider-button-${provider.id.toLowerCase()}`}
-              onClick={() => onProviderSelect(provider.id)}
+              data-testid={`provider-button-${protocol.id.toLowerCase()}`}
+              onClick={() => onProtocolSelect(protocol.id)}
             >
               <img
-                src={provider.icon}
-                alt={provider.name}
+                src={protocol.icon}
+                alt={protocol.name}
                 style={{
                   width: '20px',
                   height: '20px',
@@ -217,8 +217,8 @@ function ProtocolList(props: Props) {
   }, [
     styles.chainButton,
     styles.shortList,
-    onProviderSelect,
-    selectedProvider,
+    onProtocolSelect,
+    selectedProtocol,
     setShowSearch,
     showMoreButton,
     topProviders,
@@ -229,26 +229,26 @@ function ProtocolList(props: Props) {
       <SearchableList<ProtocolConfig>
         searchPlaceholder="Search for a provider"
         sx={styles.chainSearch}
-        items={providerList ?? []}
-        searchQuery={providerSearchQuery}
-        onQueryChange={setProviderSearchQuery}
-        filterFn={(provider, query) =>
-          !query || provider.name.toLowerCase().includes(query.toLowerCase())
+        items={protocolList ?? []}
+        searchQuery={protocolSearchQuery}
+        onQueryChange={setProtocolSearchQuery}
+        filterFn={(protocol, query) =>
+          !query || protocol.name.toLowerCase().includes(query.toLowerCase())
         }
-        renderFn={(provider) => (
+        renderFn={(protocol) => (
           <ListItemButton
-            key={provider.id}
+            key={protocol.id}
             dense
             sx={styles.chainItem}
             onClick={() => {
-              onProviderSelect(provider.id);
+              onProtocolSelect(protocol.id);
               setShowSearch(false);
             }}
           >
             <ListItemIcon sx={{ minWidth: '50px' }}>
               <img
-                src={provider.icon}
-                alt={provider.name}
+                src={protocol?.icon}
+                alt={protocol.name}
                 style={{
                   width: '36px',
                   height: '36px',
@@ -259,23 +259,23 @@ function ProtocolList(props: Props) {
               />
             </ListItemIcon>
             <Typography fontSize="16px" fontWeight={500}>
-              {provider.name}
+              {protocol.name}
             </Typography>
           </ListItemButton>
         )}
       />
     ),
     [
-      providerList,
-      providerSearchQuery,
+      protocolList,
+      protocolSearchQuery,
       styles.chainItem,
       styles.chainSearch,
-      onProviderSelect,
+      onProtocolSelect,
       setShowSearch,
     ],
   );
 
-  if (providerList.length === 0) {
+  if (protocolList?.length === 0) {
     return (
       <Typography
         fontSize="14px"
@@ -283,7 +283,7 @@ function ProtocolList(props: Props) {
         textAlign="center"
         sx={{ py: 2 }}
       >
-        No providers available for this chain
+        No protocols available for this chain
       </Typography>
     );
   }
@@ -296,7 +296,7 @@ function ProtocolList(props: Props) {
     <Card sx={styles.card} variant="elevation">
       <CardContent sx={styles.cardContent}>
         <Typography sx={styles.title} fontSize="16px" fontWeight={500}>
-          Select a provider
+          Select a protocol
         </Typography>
         {showSearch ? searchList : shortList}
       </CardContent>

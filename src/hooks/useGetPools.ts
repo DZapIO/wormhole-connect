@@ -9,7 +9,7 @@ import type { ZapPoolData } from 'zap/sdk';
 import { setDestToken } from 'store/transferInput';
 
 type Props = {
-  provider?: string;
+  protocol?: string;
   chain: Chain | undefined;
   limit?: number;
 };
@@ -21,7 +21,7 @@ type ReturnProps = {
 
 const computePoolsForChainAndProvider = async (
   chain: Chain | undefined,
-  provider: string,
+  protocol: string,
   getPool: (token: ZapPoolData) => ZapAsset | undefined,
   limit?: number,
 ): Promise<Token[]> => {
@@ -29,9 +29,9 @@ const computePoolsForChainAndProvider = async (
     return [];
   }
 
-  const cachedPools = config.zapAssets.getPoolsForChainAndProvider(
+  const cachedPools = config.zapAssets.getPoolsForChainAndProtocol(
     chain,
-    provider,
+    protocol,
   );
 
   if (cachedPools.length > 0) {
@@ -41,7 +41,7 @@ const computePoolsForChainAndProvider = async (
   // Both chains selected - fetch supported tokens from routes
   const poolsResult = await config.zapDataAggregator.getPools({
     chain,
-    provider,
+    protocol: protocol,
     limit,
   });
 
@@ -52,7 +52,7 @@ const computePoolsForChainAndProvider = async (
 };
 
 const useGetPools = (props: Props): ReturnProps => {
-  const { chain, provider, limit } = props;
+  const { chain, protocol, limit } = props;
 
   const dispatch = useDispatch();
   const { getPool } = useZap();
@@ -61,8 +61,7 @@ const useGetPools = (props: Props): ReturnProps => {
   const [isFetching, setIsFetching] = useState(false);
 
   const computeDestTokens = useCallback(async () => {
-    if (isFetching || !provider || !chain) {
-      // If we're already fetching, don't fetch again
+    if (!protocol) {
       return;
     }
     setPools([]);
@@ -71,7 +70,7 @@ const useGetPools = (props: Props): ReturnProps => {
     try {
       const supported = await computePoolsForChainAndProvider(
         chain,
-        provider,
+        protocol,
         getPool,
         limit,
       );
@@ -85,7 +84,7 @@ const useGetPools = (props: Props): ReturnProps => {
     } finally {
       setIsFetching(false);
     }
-  }, [chain, provider, limit, dispatch, getPool, isFetching]);
+  }, [chain, protocol, limit, dispatch, getPool]);
 
   useEffect(() => {
     computeDestTokens();

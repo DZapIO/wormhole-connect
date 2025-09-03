@@ -9,12 +9,12 @@ type Amount = sdkAmount.Amount;
 export interface ZapDataProvider<P = any, T = any> {
   getPools(
     chain: Chain,
-    provider: string,
+    protocol: string,
     limit?: number,
   ): Promise<ZapPoolData<P>[]>;
   getPositions(
     chain: Chain,
-    provider: string,
+    protocol: string,
     userAddress: string,
     limit?: number,
   ): Promise<ZapPositionData<T>[]>;
@@ -26,17 +26,17 @@ export interface ZapDataProviderConstructor<P = any, T = any> {
     name: string;
     provider: string;
   };
-  isProviderSupported<N extends Network>(
+  isProtocolSupported<N extends Network>(
     Network: N,
     chain: Chain,
-    provider: string,
+    protocol: string,
   ): boolean;
 }
 
 export interface ZapPoolData<D = any> {
   address: string;
   name: string;
-  provider: string;
+  protocol: string;
   symbol: string;
   chain: Chain;
   apr?: number;
@@ -50,7 +50,7 @@ export interface ZapPositionData<D = any> {
   address: string;
   name: string;
   symbol: string;
-  provider: string;
+  protocol: string;
   chain: Chain;
   decimals: number;
   userAddress: string;
