@@ -191,6 +191,7 @@ function Zap(props: ZapProps) {
       sourceChain,
       destChain,
       sourceToken,
+      destToken,
     });
 
   const {

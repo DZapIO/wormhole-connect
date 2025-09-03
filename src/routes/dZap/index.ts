@@ -45,6 +45,7 @@ import {
   getChainId,
   getNativeContractAddress,
   getTransactionStatus,
+  getZapPoolAmountUSD,
   isDZapNativeContractAddress,
   isTestnetSupportedChain,
   txStatusToReceipt,
@@ -66,8 +67,16 @@ export namespace DZapRoute {
 
 type Op = DZapRoute.Options;
 type Vp = DZapRoute.ValidatedParams;
-type Q = routes.Quote<Op, Vp, ZapQuoteResponse>;
-type QR = routes.QuoteResult<Op, Vp, ZapQuoteResponse>;
+type Q = routes.Quote<
+  Op,
+  Vp,
+  ZapBuildTxnResponse & { amountUSD: string | null }
+>;
+type QR = routes.QuoteResult<
+  Op,
+  Vp,
+  ZapQuoteResponse & { amountUSD: string | null }
+>;
 type R = routes.Receipt;
 
 type Tp = routes.TransferParams<Op>;
@@ -323,7 +332,11 @@ export class DZapRoute<N extends Network> extends routes.AutomaticRoute<
         },
         destinationNativeGas: amount.fromBaseUnits(0n, 18),
         eta: etaSeconds * 1000,
-        details: quote,
+        details: {
+          ...quote,
+          steps: [],
+          amountUSD: getZapPoolAmountUSD(quote),
+        },
         expires,
       };
       return fullQuote;
@@ -371,6 +384,38 @@ export class DZapRoute<N extends Network> extends routes.AutomaticRoute<
     }
   }
 
+  private async sendEvmTransaction(
+    signer: Signer,
+    txReqs: EvmUnsignedTransaction<N, EvmChains>[],
+    txs: TransactionId[],
+    request: routes.RouteTransferRequest<N>,
+    rpc: any,
+  ) {
+    if (isSignAndSendSigner(signer)) {
+      const txids = await signer.signAndSend(txReqs);
+
+      txs.push(
+        ...txids.map((txid) => ({
+          chain: request.fromChain.chain,
+          txid,
+        })),
+      );
+    } else if (isSignOnlySigner(signer)) {
+      const signed = await signer.sign(txReqs);
+      const txids = await EvmPlatform.sendWait(
+        request.fromChain.chain,
+        rpc,
+        signed,
+      );
+      txs.push(
+        ...txids.map((txid) => ({
+          chain: request.fromChain.chain,
+          txid,
+        })),
+      );
+    }
+  }
+
   async initiate(
     request: routes.RouteTransferRequest<N>,
     signer: Signer<N>,
@@ -382,8 +427,6 @@ export class DZapRoute<N extends Network> extends routes.AutomaticRoute<
       const destinationAddress = canonicalAddress(to);
       const txs: TransactionId[] = [];
       const rpc = await request.fromChain.getRpc();
-
-      const txReqs: EvmUnsignedTransaction<N, EvmChains>[] = [];
 
       const nativeChainId = nativeChainIds.networkChainToNativeChainId.get(
         request.fromChain.network,
@@ -415,7 +458,7 @@ export class DZapRoute<N extends Network> extends routes.AutomaticRoute<
             amountUnits,
           );
 
-          txReqs.push(
+          const approvalTxReqs = [
             new EvmUnsignedTransaction(
               {
                 from: originAddress,
@@ -426,6 +469,13 @@ export class DZapRoute<N extends Network> extends routes.AutomaticRoute<
               request.fromChain.chain as EvmChains,
               'Approve Allowance',
             ),
+          ];
+          await this.sendEvmTransaction(
+            signer,
+            approvalTxReqs,
+            txs,
+            request,
+            rpc,
           );
         }
       }
@@ -440,6 +490,7 @@ export class DZapRoute<N extends Network> extends routes.AutomaticRoute<
         refundee: originAddress as HexString,
         slippage: 0.5, // TODO: Add slippage control
         amount: this.getParsedAmount(request, quote.params.amount),
+        estimateGas: true,
       };
 
       const buildResponse: ZapBuildTxnResponse =
@@ -449,46 +500,22 @@ export class DZapRoute<N extends Network> extends routes.AutomaticRoute<
         (step) => step.action === 'execute',
       )[0].data;
 
-      const txReq = {
-        from: originAddress,
-        to: txnData.callTo,
-        data: txnData.callData,
-        value: txnData.value,
-        chainId: getChainId(request.fromChain.chain)!,
-      };
-
-      txReqs.push(
+      const finalTxReqs = [
         new EvmUnsignedTransaction(
-          txReq,
+          {
+            from: originAddress,
+            to: txnData.callTo,
+            data: txnData.callData,
+            value: txnData.value,
+            chainId: getChainId(request.fromChain.chain)!,
+          },
           request.fromChain.network,
           request.fromChain.chain as EvmChains,
           'Execute Swap',
         ),
-      );
+      ];
 
-      if (isSignAndSendSigner(signer)) {
-        const txids = await signer.signAndSend(txReqs);
-
-        txs.push(
-          ...txids.map((txid) => ({
-            chain: request.fromChain.chain,
-            txid,
-          })),
-        );
-      } else if (isSignOnlySigner(signer)) {
-        const signed = await signer.sign(txReqs);
-        const txids = await EvmPlatform.sendWait(
-          request.fromChain.chain,
-          rpc,
-          signed,
-        );
-        txs.push(
-          ...txids.map((txid) => ({
-            chain: request.fromChain.chain,
-            txid,
-          })),
-        );
-      }
+      await this.sendEvmTransaction(signer, finalTxReqs, txs, request, rpc);
 
       return {
         from: request.fromChain.chain,

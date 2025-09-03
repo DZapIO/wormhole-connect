@@ -29,35 +29,26 @@ const computePositionsForChainAndProvider = async (
     return [];
   }
 
-  // const cachedPositions = config.zapAssets.getAllPositionsForChainAndProvider(
-  //   chain,
-  //   provider,
-  // );
-
-  // if (cachedPositions.length > 0) {
-  //   return cachedPositions;
-  // }
-
   // Both chains selected - fetch supported tokens from routes
-  const supportedTokenIds = await config.zapDataProvider.getPositions({
+  const positionsResult = await config.zapDataProvider.getPositions({
     chain,
     userAddress: userAddress,
     provider,
     limit,
   });
 
-  const tokens = await Promise.all(
-    supportedTokenIds.positions.map(getPosition),
+  const positions = await Promise.all(
+    positionsResult.positions.map(getPosition),
   );
-  const supportedTokens = tokens.filter((token) => !!token);
+  const supportedPositions = positions.filter((position) => !!position);
 
-  return supportedTokens;
+  return supportedPositions;
 };
 
 const useGetPositions = (props: Props): ReturnProps => {
   const { chain, provider, limit, userAddress } = props;
 
-  const { getPosition, lastZapAssetCacheUpdate } = useZap();
+  const { getPosition } = useZap();
 
   const [positions, setPositions] = useState<ZapAsset[]>([]);
   const [isFetching, setIsFetching] = useState(false);
@@ -83,7 +74,7 @@ const useGetPositions = (props: Props): ReturnProps => {
 
   useEffect(() => {
     computeDestTokens();
-  }, [computeDestTokens, lastZapAssetCacheUpdate]);
+  }, [computeDestTokens]);
 
   return {
     positions,

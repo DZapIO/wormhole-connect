@@ -1,7 +1,7 @@
 import type { Chain, Network } from '@wormhole-foundation/sdk';
 import type { ZapDataProviderConstructor } from './types';
 
-export class ZapDataSDK {
+export class ZapDataProvider {
   constructor(readonly pc: ZapDataProviderConstructor) {}
 
   isDataProviderSupported<N extends Network>(
@@ -20,9 +20,7 @@ export class ZapDataSDK {
     limit?: number,
   ) {
     if (!this.pc.isProviderSupported(network, chain, provider)) {
-      throw new Error(
-        `Provider ${provider} is not supported on chain ${chain}`,
-      );
+      return [];
     }
     const providerInstance = new this.pc();
     return providerInstance.getPools(chain, provider, limit);
@@ -36,9 +34,7 @@ export class ZapDataSDK {
     limit?: number,
   ) {
     if (!this.pc.isProviderSupported(network, chain, provider)) {
-      throw new Error(
-        `Provider ${provider} is not supported on chain ${chain}`,
-      );
+      return [];
     }
     const providerInstance = new this.pc();
     return providerInstance.getPositions(chain, provider, userAddress, limit);

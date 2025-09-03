@@ -31,6 +31,8 @@ export const getAllZapTokenIdsForChain = memoize(
   {
     // Invalidate when token cache updates by including lastUpdate in the key
     serializer: (args: unknown[]) =>
-      `${String(args[0])}|${config.tokens.lastUpdate.getTime()}`,
+      `${String(
+        args[0],
+      )}|${config.tokens.lastUpdate.getTime()}|${config.zapAssets.lastUpdate.getTime()}`,
   },
 );

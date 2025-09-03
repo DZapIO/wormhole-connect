@@ -28,7 +28,7 @@ import evm from '@wormhole-foundation/sdk/evm';
 import solana from '@wormhole-foundation/sdk/solana';
 import sui from '@wormhole-foundation/sdk/sui';
 import RouteOperator from 'routes/operator';
-import ZapDataProvider from '../zap/dataProvider';
+import ZapDataAggregator from '../zap/aggregator';
 import { CHAIN_ORDER } from './constants';
 import { buildTokenCache } from './tokens';
 import { createUiConfig } from './ui';
@@ -168,7 +168,7 @@ export function buildConfig(
 
     routes: new RouteOperator(customConfig.routes),
 
-    zapDataProvider: new ZapDataProvider(),
+    zapDataProvider: new ZapDataAggregator(),
 
     // UI details
     ui: createUiConfig({ ...customConfig.ui }),

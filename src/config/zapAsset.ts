@@ -219,6 +219,7 @@ export function parseZapAssetKey(key: string): ZapAssetId {
 interface ZapAssetJson extends TokenJson {
   zapTokenInfo?: ZapTokenInfo;
   zapPositionDetails?: ZapPositionDetails;
+  expiresAt?: Date;
 }
 
 export type ZapAssetId = TokenId & {
@@ -229,7 +230,7 @@ export type ZapAssetId = TokenId & {
 export class ZapAsset extends Token {
   zapTokenInfo?: ZapTokenInfo;
   zapPositionDetails?: ZapPositionDetails;
-
+  expiresAt?: Date;
   constructor(
     chain: Chain,
     address: string,
@@ -241,6 +242,7 @@ export class ZapAsset extends Token {
     coingeckoId?: string,
     zapTokenInfo?: ZapTokenInfo,
     zapPositionDetails?: ZapPositionDetails,
+    expiresAt?: Date,
   ) {
     super(
       chain,
@@ -254,6 +256,7 @@ export class ZapAsset extends Token {
     );
     this.zapTokenInfo = zapTokenInfo;
     this.zapPositionDetails = zapPositionDetails;
+    this.expiresAt = expiresAt;
   }
 
   get key(): string {
@@ -306,6 +309,7 @@ export class ZapAsset extends Token {
       coingeckoWebId: this.coingeckoWebId,
       zapTokenInfo: this.zapTokenInfo,
       zapPositionDetails: this.zapPositionDetails,
+      expiresAt: this.expiresAt,
     };
   }
 
@@ -320,6 +324,7 @@ export class ZapAsset extends Token {
     coingeckoWebId,
     zapTokenInfo,
     zapPositionDetails,
+    expiresAt,
   }: ZapAssetJson) {
     return new ZapAsset(
       chain as Chain,
@@ -334,6 +339,7 @@ export class ZapAsset extends Token {
       coingeckoWebId,
       zapTokenInfo,
       zapPositionDetails,
+      expiresAt,
     );
   }
 }
@@ -394,46 +400,40 @@ export class ZapAssetMapping<T extends ZapAsset> extends TokenMapping<T> {
     }
   }
 
-  getAllPoolsForChainAndProvider(chain: Chain, provider: string): T[] {
+  getPoolsForChainAndProvider(chain: Chain, provider: string): T[] {
     const zapAssets = this._mapping.get(chain);
     if (!zapAssets) return [];
 
     return Array.from(zapAssets.values()).filter(
       (asset: T) =>
         asset.zapTokenInfo?.type === ZapAssetType.POOL &&
-        asset.zapTokenInfo?.provider === provider,
-    );
-  }
-  getAllPositionsForChainAndProvider(chain: Chain, provider: string): T[] {
-    const zapAssets = this._mapping.get(chain);
-    if (!zapAssets) return [];
-
-    return Array.from(zapAssets.values()).filter(
-      (asset: T) =>
-        asset.zapTokenInfo?.type === ZapAssetType.POSITION &&
-        asset.zapTokenInfo?.provider === provider,
+        asset.zapTokenInfo?.provider === provider &&
+        asset?.expiresAt &&
+        asset?.expiresAt > new Date(),
     );
   }
 }
 
 export class ZapAssetCache extends ZapAssetMapping<ZapAsset> {
   add(zapAsset: ZapAsset) {
-    if (zapAsset.tokenBridgeOriginalTokenId) {
-      // Try to find the original asset to copy metadata
-      const originalKey = getZapAssetKey(
-        zapAsset.tokenBridgeOriginalTokenId.chain,
-        zapAsset.tokenBridgeOriginalTokenId.address.toString(),
-        zapAsset.zapTokenInfo?.type,
-        zapAsset.zapTokenInfo?.provider,
-        zapAsset.zapPositionDetails?.nftId,
-      );
-      const original = this.get(originalKey);
-      if (original) {
-        zapAsset.icon = original.icon;
-        zapAsset.name = original.name;
-        zapAsset.symbol = original.symbol;
-      }
+    const originalKey = getZapAssetKey(
+      zapAsset.chain,
+      zapAsset.addressString,
+      zapAsset.zapTokenInfo?.type,
+      zapAsset.zapTokenInfo?.provider,
+      zapAsset.zapPositionDetails?.nftId,
+    );
+    const original = this.get(originalKey);
+    if (original) {
+      zapAsset.icon = original.icon;
+      zapAsset.name = original.name;
+      zapAsset.symbol = original.symbol;
     }
+
+    const expiresAt = isZapPool(zapAsset.tuple)
+      ? new Date(Date.now() + 24 * 60 * 60 * 1000) // 1 day
+      : new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    zapAsset.expiresAt = expiresAt;
     super.add(zapAsset.tokenId, zapAsset);
   }
 

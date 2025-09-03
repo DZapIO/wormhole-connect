@@ -1,7 +1,8 @@
+import type { ZapQuoteResponse } from '@dzapio/sdk';
 import {
   DZapClient,
-  type ZapStatusResponse,
   type HexString,
+  type ZapStatusResponse,
 } from '@dzapio/sdk';
 import type {
   AttestationReceipt,
@@ -22,6 +23,7 @@ import {
 } from '@wormhole-foundation/sdk-connect';
 import { isEvmNativeSigner } from '@wormhole-foundation/sdk-evm';
 import type { ethers } from 'ethers';
+import { getUSDFormat } from 'utils';
 
 /**
  * Maps Wormhole Chain names to their corresponding chain IDs
@@ -91,6 +93,22 @@ export function getNativeContractAddress(chain: Chain): HexString {
 export function isDZapNativeContractAddress(address: string): boolean {
   return address === '0x0000000000000000000000000000000000000000';
 }
+
+export const getZapPoolAmountUSD = (quote: ZapQuoteResponse | undefined) => {
+  if (!quote) {
+    return null;
+  }
+  const path = quote.path;
+  if (path && Array.isArray(path) && path.length > 0) {
+    const lastPathItem = path[path.length - 1];
+    const output = lastPathItem?.output;
+    if (output && Array.isArray(output) && output.length > 0) {
+      const amountUSD = output[0]?.amountUSD;
+      return amountUSD ? getUSDFormat(parseFloat(amountUSD)) : null;
+    }
+  }
+  return null;
+};
 
 const chainNameMap = {
   // EVM Chains

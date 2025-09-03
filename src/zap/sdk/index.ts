@@ -1,6 +1,6 @@
 // Export the main classes and types
-export { default as ZapOperator } from '../dataProvider';
-export { ZapDataSDK } from './data';
+export { default as ZapOperator } from '../aggregator';
+export { ZapDataProvider as ZapDataSDK } from './provider';
 
 // Export types
 export type {
@@ -15,4 +15,4 @@ export type {
   ZapPositionResult,
   ZapPoolParams,
   ZapPositionParams,
-} from '../dataProvider';
+} from '../aggregator';

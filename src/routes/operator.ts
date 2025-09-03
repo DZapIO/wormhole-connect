@@ -144,6 +144,7 @@ export default class Routeperator {
 
   async allSupportedDestTokens(
     sourceToken: Token | undefined,
+    destToken: Token | undefined,
     sourceChain: Chain,
     destChain: Chain,
   ): Promise<TokenId[]> {
@@ -154,6 +155,7 @@ export default class Routeperator {
         const destTokenIds = await route.supportedDestTokens(
           name,
           sourceToken,
+          destToken,
           sourceChain,
           destChain,
         );

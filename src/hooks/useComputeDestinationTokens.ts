@@ -13,6 +13,7 @@ type Props = {
   sourceChain: Chain | undefined;
   sourceToken: Token | undefined;
   destChain: Chain | undefined;
+  destToken?: Token;
 };
 
 type ReturnProps = {
@@ -31,6 +32,7 @@ const computeDestTokensForChains = async (
   sourceChain: Chain | undefined,
   destChain: Chain | undefined,
   sourceToken: Token | undefined,
+  destToken: Token | undefined,
   getOrFetchToken: (tokenId: TokenId) => Promise<Token | undefined>,
 ): Promise<Token[]> => {
   if (!destChain) {
@@ -46,6 +48,7 @@ const computeDestTokensForChains = async (
   // Both chains selected - fetch supported tokens from routes
   const supportedTokenIds = await config.routes.allSupportedDestTokens(
     sourceToken,
+    destToken,
     sourceChain,
     destChain,
   );
@@ -57,7 +60,7 @@ const computeDestTokensForChains = async (
 };
 
 const useComputeDestinationTokens = (props: Props): ReturnProps => {
-  const { sourceChain, destChain, sourceToken } = props;
+  const { sourceChain, destChain, sourceToken, destToken } = props;
 
   const dispatch = useDispatch();
   const { getOrFetchToken, lastTokenCacheUpdate } = useTokens();
@@ -74,6 +77,7 @@ const useComputeDestinationTokens = (props: Props): ReturnProps => {
         sourceChain,
         destChain,
         sourceToken,
+        destToken,
         getOrFetchToken,
       );
 
@@ -86,7 +90,14 @@ const useComputeDestinationTokens = (props: Props): ReturnProps => {
     } finally {
       setIsFetching(false);
     }
-  }, [sourceToken, sourceChain, destChain, dispatch, getOrFetchToken]);
+  }, [
+    sourceToken,
+    sourceChain,
+    destChain,
+    destToken,
+    dispatch,
+    getOrFetchToken,
+  ]);
 
   useEffect(() => {
     computeDestTokens();

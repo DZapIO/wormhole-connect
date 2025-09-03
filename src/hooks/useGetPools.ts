@@ -29,29 +29,42 @@ const computePoolsForChainAndProvider = async (
     return [];
   }
 
+  const cachedPools = config.zapAssets.getPoolsForChainAndProvider(
+    chain,
+    provider,
+  );
+
+  if (cachedPools.length > 0) {
+    return cachedPools;
+  }
+
   // Both chains selected - fetch supported tokens from routes
-  const supportedTokenIds = await config.zapDataProvider.getPools({
+  const poolsResult = await config.zapDataProvider.getPools({
     chain,
     provider,
     limit,
   });
 
-  const tokens = await Promise.all(supportedTokenIds.pools.map(getPool));
-  const supportedTokens = tokens.filter((token) => !!token);
+  const pools = await Promise.all(poolsResult.pools.map(getPool));
+  const supportedPools = pools.filter((pool) => !!pool);
 
-  return supportedTokens;
+  return supportedPools;
 };
 
 const useGetPools = (props: Props): ReturnProps => {
   const { chain, provider, limit } = props;
 
   const dispatch = useDispatch();
-  const { getPool, lastZapAssetCacheUpdate } = useZap();
+  const { getPool } = useZap();
 
   const [pools, setPools] = useState<ZapAsset[]>([]);
   const [isFetching, setIsFetching] = useState(false);
 
   const computeDestTokens = useCallback(async () => {
+    if (isFetching) {
+      // If we're already fetching, don't fetch again
+      return;
+    }
     setPools([]);
     setIsFetching(true);
 
@@ -72,11 +85,11 @@ const useGetPools = (props: Props): ReturnProps => {
     } finally {
       setIsFetching(false);
     }
-  }, [chain, provider, limit, dispatch, getPool]);
+  }, [chain, provider, limit, dispatch, getPool, isFetching]);
 
   useEffect(() => {
     computeDestTokens();
-  }, [computeDestTokens, lastZapAssetCacheUpdate]);
+  }, [computeDestTokens]);
 
   return {
     pools,

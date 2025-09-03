@@ -8,13 +8,11 @@ import React, {
   createContext,
   useCallback,
   useContext,
-  useState,
   type ReactNode,
 } from 'react';
 import { type ZapPoolData, type ZapPositionData } from '../zap/sdk';
 
 interface ZapContextType {
-  lastZapAssetCacheUpdate: Date;
   getPool: (pool: ZapPoolData) => ZapAsset;
   getPosition: (position: ZapPositionData) => ZapAsset;
 }
@@ -25,38 +23,24 @@ interface ZapProviderProps {
 }
 
 export const ZapProvider: React.FC<ZapProviderProps> = ({ children }) => {
-  const [lastZapAssetCacheUpdate, setLastZapAssetCacheUpdate] = useState(
-    config.zapAssets.lastUpdate,
-  );
-
   const getPool = useCallback((pool: ZapPoolData): ZapAsset => {
     const zapAsset = getZapAssetFromPool(pool);
 
-    const cachedPools = config.zapAssets.get(zapAsset.tuple);
-
-    if (cachedPools) {
-      return cachedPools;
+    if (config.zapAssets.get(zapAsset.tokenId)) {
+      return zapAsset;
     }
 
     config.zapAssets.add(zapAsset);
-    setLastZapAssetCacheUpdate(config.zapAssets.lastUpdate);
     config.zapAssets.persist();
 
     return zapAsset;
   }, []);
 
-  // Cache-first position fetching (following TokensContext pattern)
   const getPosition = useCallback((position: ZapPositionData): ZapAsset => {
     const zapAsset = getZapAssetFromPosition(position);
 
-    const cachedPools = config.zapAssets.get(zapAsset.tuple);
-
-    if (cachedPools) {
-      return cachedPools;
-    }
-
+    // don't check cache for positions
     config.zapAssets.add(zapAsset);
-    setLastZapAssetCacheUpdate(config.zapAssets.lastUpdate);
     config.zapAssets.persist();
 
     return zapAsset;
@@ -65,7 +49,6 @@ export const ZapProvider: React.FC<ZapProviderProps> = ({ children }) => {
   return (
     <ZapContext.Provider
       value={{
-        lastZapAssetCacheUpdate,
         getPool,
         getPosition,
       }}

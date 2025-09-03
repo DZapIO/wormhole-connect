@@ -19,18 +19,18 @@ import { useTokens } from 'contexts/TokensContext';
 import type { AmountValidationResult } from 'hooks/useAmountValidation';
 import { useTokenList } from 'hooks/useTokenList';
 import type { RootState } from 'store';
-import type { WalletData } from 'store/wallet';
 import { isDisabledChain, setAmount } from 'store/transferInput';
+import type { WalletData } from 'store/wallet';
 import { calculateUSDPrice } from 'utils';
 import { formatWithCommas } from 'utils/formatNumber';
 import { OPACITY } from 'utils/style';
 import { TransferWallet } from 'utils/wallet';
 import type { Balances } from 'utils/wallet/types';
-import { getDefaultProvider, getZapPoolAmountUSD } from 'utils/zap';
-import WalletController from 'views/v3/Bridge/WalletConnector/Controller';
+import { getDefaultProvider } from 'utils/zap';
 import AmountInput from 'views/v3/Bridge/AmountInput';
 import AssetPickerDrawer from 'views/v3/Bridge/AssetPicker/PickerBottomSheet';
 import AssetPickerPopover from 'views/v3/Bridge/AssetPicker/PickerModal';
+import WalletController from 'views/v3/Bridge/WalletConnector/Controller';
 
 type Props = {
   chain?: Chain | undefined;
@@ -277,7 +277,7 @@ function AssetPicker(props: Props) {
       ? amount
       : props.quote?.destinationToken.amount;
     if (props.token?.zapTokenInfo?.type === ZapAssetType.POOL) {
-      return getZapPoolAmountUSD(props.quote?.details);
+      return props.quote?.details?.amountUSD ?? null;
     }
     if (props.token && tokenAmount) {
       return calculateUSDPrice(getTokenPrice, tokenAmount, props.token);

@@ -1,12 +1,13 @@
 import type { Chain } from '@wormhole-foundation/sdk';
 import config from 'config';
 import { DZapDataProvider } from './dZap';
-import { ZapDataSDK } from './sdk/data';
+import { ZapDataProvider } from './sdk/provider';
 import type {
   ZapDataProviderConstructor,
   ZapPoolData,
   ZapPositionData,
 } from './sdk/types';
+import { getZapAssetKey, ZapAssetType } from 'config/zapAsset';
 
 export interface ZapPoolResult {
   pools: ZapPoolData[];
@@ -23,7 +24,7 @@ export interface ZapPositionResult {
   timestamp: Date;
 }
 
-type forEachCallback<T> = (name: string, route: ZapDataSDK) => T;
+type forEachCallback<T> = (name: string, route: ZapDataProvider) => T;
 
 export const DEFAULT_ZAP_PROVIDERS = [
   // Add providers here as they are implemented
@@ -43,8 +44,18 @@ export interface ZapPositionParams {
   limit?: number;
 }
 
-export default class ZapDataProvider {
-  zapRoutes: Record<string, ZapDataSDK>;
+function getPositionKey(position: ZapPositionData): string {
+  return getZapAssetKey(
+    position.chain,
+    position.address.toString(),
+    ZapAssetType.POSITION,
+    position.provider,
+    position.details?.nftId,
+  );
+}
+
+export default class ZapDataAggregator {
+  zapRoutes: Record<string, ZapDataProvider>;
   preference: string[];
 
   constructor(zapRoutes: ZapDataProviderConstructor[] = DEFAULT_ZAP_PROVIDERS) {
@@ -59,7 +70,7 @@ export default class ZapDataProvider {
       } else if (name in providerMap) {
         throw new Error(`Provider has duplicate name: ${name}`);
       }
-      providerMap[name] = new ZapDataSDK(zc);
+      providerMap[name] = new ZapDataProvider(zc);
       providerClassMap[name] = zc;
       preference.push(name);
     }
@@ -121,10 +132,10 @@ export default class ZapDataProvider {
         );
 
         for (const position of zapPositionResults) {
-          if (supported.has(position.address.toLowerCase())) {
+          if (supported.has(getPositionKey(position))) {
             continue;
           }
-          supported.add(position.address.toLowerCase());
+          supported.add(getPositionKey(position));
           positions.push(position);
         }
       } catch (e) {
