@@ -82,8 +82,6 @@ const parseConfig = (config: string): WormholeConnectConfig => {
       /* @ts-ignore */
       window.MayanRouteSWIFT = MayanRouteSWIFT;
       /* @ts-ignore */
-      window.DZapRoute = DZapRoute;
-      /* @ts-ignore */
       window.testNttRoutesTestnet = () => nttRoutes(NTT_TEST_CONFIG_TESTNET);
       /* @ts-ignore */
       window.testNttRoutesMainnet = () => nttRoutes(NTT_TEST_CONFIG_MAINNET);

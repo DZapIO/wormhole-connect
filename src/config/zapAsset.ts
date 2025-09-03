@@ -157,7 +157,6 @@ export function parseZapAssetKey(key: string): ZapAssetId {
 interface ZapAssetJson extends TokenJson {
   zapTokenInfo?: ZapTokenInfo;
   zapPositionDetails?: ZapPositionDetails;
-  expiresAt?: Date;
 }
 
 export type ZapAssetId = TokenId & {
@@ -167,7 +166,6 @@ export type ZapAssetId = TokenId & {
 export class ZapAsset extends Token {
   zapTokenInfo?: ZapTokenInfo;
   zapPositionDetails?: ZapPositionDetails;
-  expiresAt?: Date;
   constructor(
     chain: Chain,
     address: string,
@@ -179,7 +177,6 @@ export class ZapAsset extends Token {
     coingeckoId?: string,
     zapTokenInfo?: ZapTokenInfo,
     zapPositionDetails?: ZapPositionDetails,
-    expiresAt?: Date,
   ) {
     super(
       chain,
@@ -193,7 +190,6 @@ export class ZapAsset extends Token {
     );
     this.zapTokenInfo = zapTokenInfo;
     this.zapPositionDetails = zapPositionDetails;
-    this.expiresAt = expiresAt;
   }
 
   get key(): string {
@@ -243,7 +239,6 @@ export class ZapAsset extends Token {
       coingeckoWebId: this.coingeckoWebId,
       zapTokenInfo: this.zapTokenInfo,
       zapPositionDetails: this.zapPositionDetails,
-      expiresAt: this.expiresAt,
     };
   }
 
@@ -258,7 +253,6 @@ export class ZapAsset extends Token {
     coingeckoWebId,
     zapTokenInfo,
     zapPositionDetails,
-    expiresAt,
   }: ZapAssetJson) {
     return new ZapAsset(
       chain as Chain,
@@ -273,7 +267,6 @@ export class ZapAsset extends Token {
       coingeckoWebId,
       zapTokenInfo,
       zapPositionDetails,
-      expiresAt,
     );
   }
 }
@@ -289,8 +282,6 @@ export class ZapAssetMapping<T extends ZapAsset> extends TokenMapping<T> {
       protocol: token.protocol,
       nftId: token.nftId,
     });
-    value.expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 5); // 5 hours
-
     this._mapping.get(token.chain)!.set(key, value);
     this.lastUpdate = new Date();
     this.size += 1;

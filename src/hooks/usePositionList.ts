@@ -27,6 +27,7 @@ interface UsePositionListParams {
   wallet: WalletData;
   balances: PoolBalances;
   isSourceList?: boolean; // true for source tokens, false for destination tokens
+  isFetchingBalances?: boolean;
 }
 
 export const usePositionList = ({
@@ -38,9 +39,10 @@ export const usePositionList = ({
   wallet,
   balances,
   isSourceList = false,
+  isFetchingBalances = false,
 }: UsePositionListParams): Token[] => {
   return useMemo(() => {
-    if (!poolList) return [];
+    if (!poolList.length) return [];
 
     // Apply search input - find pools with exact match of address, or partial match of symbol
     let tokens = applyPoolSearch(poolList, searchQuery, selectedChainConfig);
@@ -52,8 +54,8 @@ export const usePositionList = ({
 
     // Filter by balance for source pools when not searching
     // This allows users to search for zero-balance tokens by contract address if needed
-    // Never filter destination pools by balance
-    if (isSourceList && !searchQuery) {
+    // Never filter destination pools by balance and while fetching balances
+    if (isSourceList && !searchQuery && !isFetchingBalances) {
       tokens = filterPoolsByBalance(tokens, balances, wallet.address);
     }
 
@@ -67,5 +69,6 @@ export const usePositionList = ({
     balances,
     isSourceList,
     sourceToken,
+    isFetchingBalances,
   ]);
 };

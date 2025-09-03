@@ -105,7 +105,8 @@ function AssetPicker(props: Props) {
       props.chain &&
       props.wallet.address &&
       selectedProtocol &&
-      pools.length > 0
+      pools.length > 0 &&
+      !isPoolsFetching
     ) {
       return {
         chain: props.chain,
@@ -115,7 +116,9 @@ function AssetPicker(props: Props) {
       };
     }
     return undefined;
-  }, [props.chain, props.wallet, pools, selectedProtocol]);
+    // @dev dont add selectedProtocol to the deps because it will cause stale pools state
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.chain, props.wallet, pools, isPoolsFetching]);
 
   const poolBalances = useGetPoolBalances({
     source: sourcePoolsBalanceRequest,
@@ -131,8 +134,8 @@ function AssetPicker(props: Props) {
     wallet: props.wallet,
     balances: poolBalances.source.balances,
     isSourceList: props.isSource,
+    isFetchingBalances: poolBalances.isFetching,
   });
-
   const popupState = usePopupState({
     variant: 'popover',
     popupId: 'asset-picker',

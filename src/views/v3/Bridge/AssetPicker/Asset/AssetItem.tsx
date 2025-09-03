@@ -107,11 +107,12 @@ const AssetItem = ({
           {getPrimaryStat() && (
             <Typography sx={styles.primaryStat}>{getPrimaryStat()}</Typography>
           )}
-          {asset.zapTokenInfo?.apr && (
-            <Typography sx={styles.apy}>
-              {Number(asset.zapTokenInfo.apr).toFixed(2)}% APY
-            </Typography>
-          )}
+          <Typography sx={styles.apy}>
+            APR:{' '}
+            {asset.zapTokenInfo?.apr
+              ? `${Number(asset.zapTokenInfo.apr).toFixed(2)}%`
+              : 'N/A'}
+          </Typography>
         </Box>
       </Box>
     </ListItemButton>

@@ -13,7 +13,7 @@ const cache: Record<string, BalanceCache> = {};
 const failedTokens: Set<string> = new Set();
 
 const cacheKey = (wallet: string, token: Token): string => {
-  return `${token.chain}:${wallet}:${token.addressString}`;
+  return `${token.chain}:${wallet}:${token.key}`;
 };
 
 const getCached = (wallet: WalletData, token: Token): BalanceCache | null => {

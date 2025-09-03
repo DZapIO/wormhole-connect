@@ -17,15 +17,15 @@ export interface ChainBalanceRequest {
   protocol: string;
 }
 
-// Map of chain+wallet -> balances
+// Map of chain+wallet+protocol -> balances
 type BalanceMap = Record<string, Balances>;
 
 // Constants
 const MAX_TOKENS_TO_PROCESS = 100;
 
 // Helper to create request key
-const getRequestKey = (chain: Chain, wallet: WalletData) =>
-  `${chain}-${wallet.address}`;
+const getRequestKey = (chain: Chain, wallet: WalletData, protocol: string) =>
+  `${chain}-${wallet.address}-${protocol}`;
 
 interface UseGetPoolBalancesParams {
   source?: ChainBalanceRequest;
@@ -157,10 +157,18 @@ const useGetPoolBalances = ({
     // Build current request keys
     const newRequestKeys = new Set<string>();
     if (source) {
-      newRequestKeys.add(getRequestKey(source.chain, source.wallet));
+      newRequestKeys.add(
+        getRequestKey(source.chain, source.wallet, source.protocol),
+      );
     }
     if (destination) {
-      newRequestKeys.add(getRequestKey(destination.chain, destination.wallet));
+      newRequestKeys.add(
+        getRequestKey(
+          destination.chain,
+          destination.wallet,
+          destination.protocol,
+        ),
+      );
     }
 
     // Update current keys ref
@@ -193,7 +201,11 @@ const useGetPoolBalances = ({
       try {
         const results = await Promise.all(
           requests.map(async (request) => {
-            const key = getRequestKey(request.chain, request.wallet);
+            const key = getRequestKey(
+              request.chain,
+              request.wallet,
+              request.protocol,
+            );
 
             // Check if this key is still current
             if (!currentRequestKeysRef.current.has(key)) {
@@ -256,9 +268,11 @@ const useGetPoolBalances = ({
   ]);
 
   // Extract results for source and destination
-  const sourceKey = source ? getRequestKey(source.chain, source.wallet) : null;
+  const sourceKey = source
+    ? getRequestKey(source.chain, source.wallet, source.protocol)
+    : null;
   const destKey = destination
-    ? getRequestKey(destination.chain, destination.wallet)
+    ? getRequestKey(destination.chain, destination.wallet, destination.protocol)
     : null;
 
   const sourceResult: ChainBalanceResult = useMemo(() => {
