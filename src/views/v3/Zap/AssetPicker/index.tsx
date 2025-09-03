@@ -142,7 +142,11 @@ function AssetPicker(props: Props) {
   });
 
   const tokenBalance = useMemo(() => {
-    if (props.isSource && poolBalances.source.balances && isPool(props.token)) {
+    if (
+      props.isSource &&
+      poolBalances.source.balances &&
+      isPool(props.token?.tuple)
+    ) {
       return poolBalances.source.balances[props.token?.key]?.balance;
     }
     if (props.isSource && props.balances && props.token) {
