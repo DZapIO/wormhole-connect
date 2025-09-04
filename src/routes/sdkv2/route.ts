@@ -17,7 +17,6 @@ import type { Token } from 'config/tokens';
 
 import { amount as sdkAmount } from '@wormhole-foundation/sdk';
 import config, { getWormholeContextV2 } from 'config';
-import { isZapAsset } from 'config/zapAsset';
 import { isFrankensteinToken, sleep } from 'utils';
 import { AsyncCache } from 'utils/AsyncCache';
 import { isNttToken } from 'utils/ntt';
@@ -93,7 +92,6 @@ export class SDKv2Route {
       const supportedDestinationTokens = await this.supportedDestTokens(
         name,
         sourceToken,
-        destToken,
         fromChain,
         toChain,
       );
@@ -114,7 +112,6 @@ export class SDKv2Route {
   async supportedDestTokens(
     routeName: string,
     sourceToken: Token | undefined,
-    destToken: Token | undefined,
     fromChain?: Chain | undefined,
     toChain?: Chain | undefined,
   ): Promise<TokenId[]> {
@@ -151,10 +148,7 @@ export class SDKv2Route {
     let destTokens: TokenId[] = [];
 
     // TODO: we should not have to do this
-    if (
-      this.IS_ZAP_ROUTE &&
-      (isZapAsset(sourceToken.tokenId) || isZapAsset(destToken?.tuple))
-    ) {
+    if (this.IS_ZAP_ROUTE) {
       destTokens = await routeSupportedTokenFetcher();
     } else {
       destTokens = await this.tokenCache.requestWithCache(
