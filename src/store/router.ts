@@ -2,7 +2,13 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice } from '@reduxjs/toolkit';
 import type { TransferWallet } from 'utils/wallet';
 
-export type Route = 'bridge' | 'redeem' | 'history' | 'search' | 'terms';
+export type Route =
+  | 'bridge'
+  | 'redeem'
+  | 'history'
+  | 'search'
+  | 'terms'
+  | 'zap';
 
 export interface RouterState {
   route: Route;

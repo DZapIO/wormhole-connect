@@ -14,6 +14,7 @@ import type { WormholeConnectConfig } from './config/types';
 import type { WormholeConnectTheme } from 'theme';
 import { RouteProvider } from './contexts/RouteContext';
 import { TokensProvider } from './contexts/TokensContext';
+import { ZapProvider } from './contexts/ZapContext';
 import WalletProvider from './contexts/wallet/WalletProvider';
 import type { WormholeConnectWalletProvider } from './utils/wallet/types';
 import { internalWalletProvider } from './utils/wallet/InternalWalletProvider';
@@ -61,9 +62,11 @@ export default function WormholeConnect({
           <ErrorBoundary>
             <WalletProvider provider={walletProvider}>
               <TokensProvider>
-                <RouteProvider>
-                  <AppRouter config={config} />
-                </RouteProvider>
+                <ZapProvider>
+                  <RouteProvider>
+                    <AppRouter config={config} />
+                  </RouteProvider>
+                </ZapProvider>
               </TokensProvider>
             </WalletProvider>
           </ErrorBoundary>

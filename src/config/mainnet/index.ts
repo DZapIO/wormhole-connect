@@ -3,6 +3,7 @@ import { MAINNET_CHAINS } from './chains';
 import { MAINNET_RPC_MAPPING } from './rpcs';
 import { MAINNET_TOKENS } from './tokens';
 import { MAINNET_WRAPPED_TOKENS } from './wrappedTokens';
+import { MAINNET_ZAP_PROTOCOLS } from './zapProtocols';
 
 export * from './chains';
 export * from './rpcs';
@@ -13,6 +14,7 @@ const MAINNET: NetworkData = {
   tokens: MAINNET_TOKENS,
   wrappedTokens: MAINNET_WRAPPED_TOKENS,
   rpcs: MAINNET_RPC_MAPPING,
+  zapProtocols: MAINNET_ZAP_PROTOCOLS,
   // From VAA https://wormholescan.io/#/tx/1/0000000000000000000000000000000000000000000000000000000000000004/18252082506122526004
   guardianSet: {
     index: 4,

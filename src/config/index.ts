@@ -1,34 +1,38 @@
 import { CONFIG as LEGACY_CONFIG } from 'sdklegacy';
+import DEVNET from './devnet';
+import { wrapEventHandler } from './events';
 import MAINNET from './mainnet';
 import TESTNET from './testnet';
-import DEVNET from './devnet';
-import type { WormholeConnectConfig } from './types';
-import type { InternalConfig } from './types';
-import { mergeCustomWrappedTokens, validateDefaults } from './utils';
-import { wrapEventHandler } from './events';
-import { capitalize } from './utils';
+import type { InternalConfig, WormholeConnectConfig } from './types';
+import {
+  capitalize,
+  mergeCustomWrappedTokens,
+  validateDefaults,
+} from './utils';
 
 export * from './types';
 
 import type {
-  Wormhole as WormholeV2,
-  Network,
-  Token as SDKToken,
-  ChainTokens as SDKChainTokens,
-  WormholeConfigOverrides as WormholeConfigOverridesV2,
   Chain,
+  Network,
+  ChainTokens as SDKChainTokens,
+  Token as SDKToken,
+  WormholeConfigOverrides as WormholeConfigOverridesV2,
+  Wormhole as WormholeV2,
 } from '@wormhole-foundation/sdk';
 import { wormhole as getWormholeV2 } from '@wormhole-foundation/sdk';
 
 import '@wormhole-foundation/sdk/addresses';
+import aptos from '@wormhole-foundation/sdk/aptos';
 import evm from '@wormhole-foundation/sdk/evm';
 import solana from '@wormhole-foundation/sdk/solana';
-import aptos from '@wormhole-foundation/sdk/aptos';
 import sui from '@wormhole-foundation/sdk/sui';
 import RouteOperator from 'routes/operator';
+import ZapDataAggregator from '../zap/aggregator';
 import { CHAIN_ORDER } from './constants';
-import { createUiConfig } from './ui';
 import { buildTokenCache } from './tokens';
+import { createUiConfig } from './ui';
+import { buildZapAssetCache } from './zapAsset';
 
 export function buildConfig(
   customConfig: WormholeConnectConfig = {},
@@ -68,6 +72,15 @@ export function buildConfig(
     ],
     wrappedTokens,
     cacheKey(`token-cache:${network}`),
+  );
+
+  const zapAssets = buildZapAssetCache(
+    [
+      // For now, we start with an empty array and will add zap assets as needed
+      // TODO: Add proper zap asset configuration
+    ],
+    wrappedTokens,
+    cacheKey(`zap-asset-cache:${network}`),
   );
 
   const sdkConfig = LEGACY_CONFIG[network.toUpperCase()];
@@ -150,8 +163,12 @@ export function buildConfig(
       }),
     tokens,
     tokenWhitelist: customConfig.tokens,
+    zapAssets,
+    zapProtocols: customConfig.zapProtocols || networkData.zapProtocols || {},
 
     routes: new RouteOperator(customConfig.routes),
+
+    zapDataAggregator: new ZapDataAggregator(),
 
     // UI details
     ui: createUiConfig({ ...customConfig.ui }),

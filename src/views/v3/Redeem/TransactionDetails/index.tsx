@@ -27,6 +27,7 @@ import { amount as sdkAmount } from '@wormhole-foundation/sdk';
 
 import type { RootState } from 'store';
 import { useTokens } from 'contexts/TokensContext';
+import { getTokenFromTuple } from 'utils/tokens';
 
 const TransactionDetails = () => {
   const theme = useTheme();
@@ -63,8 +64,8 @@ const TransactionDetails = () => {
 
   const { route: routeName } = useSelector((state: RootState) => state.redeem);
 
-  const sourceToken = config.tokens.get(token);
-  const destToken = config.tokens.get(receivedToken);
+  const sourceToken = getTokenFromTuple(token);
+  const destToken = getTokenFromTuple(receivedToken);
 
   const { getTokenPrice, isFetchingTokenPrices, lastTokenPriceUpdate } =
     useTokens();
@@ -83,7 +84,7 @@ const TransactionDetails = () => {
       return <></>;
     }
 
-    const sourceTokenConfig = config.tokens.get(token);
+    const sourceTokenConfig = getTokenFromTuple(token);
     const sourceChainConfig = config.chains[fromChain]!;
 
     const usdAmount = calculateUSDPrice(

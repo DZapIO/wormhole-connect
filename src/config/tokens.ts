@@ -20,7 +20,7 @@ const HAS_LOCALSTORAGE = typeof localStorage !== 'undefined';
 
 // A TokenId initialized from a string address, which only parses the address to a NativeAddress when it's needed
 // This is just a speed optimization
-class TokenIdLazy<C extends Chain = Chain> implements TokenId<C> {
+export class TokenIdLazy<C extends Chain = Chain> implements TokenId<C> {
   chain: C;
   addressString: string;
   _address?: TokenAddress<Chain>;
@@ -173,7 +173,7 @@ export class Token extends TokenIdLazy {
   }
 }
 
-interface TokenJson {
+export interface TokenJson {
   chain: string;
   address: string;
   decimals: number;

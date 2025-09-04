@@ -1,10 +1,15 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice } from '@reduxjs/toolkit';
+import type { Chain } from '@wormhole-foundation/sdk';
+import { amount } from '@wormhole-foundation/sdk';
 import config from 'config';
 import type { TokenTuple } from 'config/tokens';
+import {
+  findTokenByAddressOrSymbol,
+  findTokenBySymbol,
+  getTokenFromTuple,
+} from 'utils/tokens';
 import { TransferWallet, walletAcceptedChains } from 'utils/wallet';
-import type { WalletData } from './wallet';
-import { clearWallet, setWalletError } from './wallet';
 import type { DataWrapper } from './helpers';
 import {
   errorDataWrapper,
@@ -12,8 +17,8 @@ import {
   getEmptyDataWrapper,
   receiveDataWrapper,
 } from './helpers';
-import type { Chain } from '@wormhole-foundation/sdk';
-import { amount } from '@wormhole-foundation/sdk';
+import type { WalletData } from './wallet';
+import { clearWallet, setWalletError } from './wallet';
 
 export type ValidationErr = string;
 
@@ -56,11 +61,11 @@ function getInitialState(): TransferInputState {
 
   const fromTokenTuple =
     fromChain && fromToken
-      ? config.tokens.findByAddressOrSymbol(fromChain, fromToken)?.tuple
+      ? findTokenByAddressOrSymbol(fromChain, fromToken)?.tuple
       : undefined;
   const toTokenTuple =
     toChain && toToken
-      ? config.tokens.findByAddressOrSymbol(toChain, toToken)?.tuple
+      ? findTokenByAddressOrSymbol(toChain, toToken)?.tuple
       : undefined;
 
   return {
@@ -98,13 +103,10 @@ const performModificationsIfFromChainChanged = (state: TransferInputState) => {
   const { fromChain } = state;
 
   if (state.token) {
-    const token = config.tokens.get(state.token);
+    const token = getTokenFromTuple(state.token);
     if (token && fromChain) {
       if (token.chain !== fromChain && token.symbol) {
-        const withSameSymbol = config.tokens.findBySymbol(
-          fromChain,
-          token.symbol,
-        );
+        const withSameSymbol = findTokenBySymbol(fromChain, token.symbol);
 
         if (withSameSymbol) {
           state.token = withSameSymbol.tuple;
@@ -118,13 +120,10 @@ const performModificationsIfToChainChanged = (state: TransferInputState) => {
   const { toChain } = state;
 
   if (state.destToken) {
-    const destToken = config.tokens.get(state.destToken);
+    const destToken = getTokenFromTuple(state.destToken);
     if (destToken && toChain) {
       if (destToken.chain !== toChain && destToken.symbol) {
-        const withSameSymbol = config.tokens.findBySymbol(
-          toChain,
-          destToken.symbol,
-        );
+        const withSameSymbol = findTokenBySymbol(toChain, destToken.symbol);
 
         if (withSameSymbol) {
           state.destToken = withSameSymbol.tuple;
@@ -192,7 +191,7 @@ export const transferInputSlice = createSlice({
       { payload }: PayloadAction<string>,
     ) => {
       if (state.token && state.fromChain) {
-        const token = config.tokens.get(state.token);
+        const token = getTokenFromTuple(state.token);
         if (token) {
           const { decimals } = token;
           const parsed = amount.parse(payload, decimals);

@@ -1,12 +1,14 @@
 import config from 'config';
 import type { Token } from 'config/tokens';
 import { parseTokenKey, tokenKey } from 'config/tokens';
-import { maybeLogSdkError } from 'utils/errors';
 import memoize from 'fast-memoize';
+import { maybeLogSdkError } from 'utils/errors';
 
-import type { Chain, TransactionId, TokenId } from '@wormhole-foundation/sdk';
+import type { Chain, TokenId, TransactionId } from '@wormhole-foundation/sdk';
 import { routes, amount as sdkAmount } from '@wormhole-foundation/sdk';
 
+import { isZapAssetId } from 'config/zapAsset';
+import { DZapRoute } from './dZap';
 import SDKv2Route from './sdkv2';
 
 export interface TxInfo {
@@ -19,7 +21,7 @@ export type QuoteResult = routes.QuoteResult<routes.Options>;
 type forEachCallback<T> = (name: string, route: SDKv2Route) => T;
 
 export const DEFAULT_ROUTES = [
-  routes.AutomaticCCTPRoute,
+  DZapRoute,
   routes.CCTPRoute,
   routes.AutomaticTokenBridgeRoute,
   routes.TokenBridgeRoute,
@@ -33,6 +35,7 @@ export interface QuoteParams {
   destToken: Token;
   amount: sdkAmount.Amount;
   nativeGas: number;
+  sender?: string;
   recipient?: string; // wallet may be undefined when not connected
 }
 
@@ -156,6 +159,10 @@ export default class RouteOperator {
         );
 
         for (const token of destTokenIds) {
+          //TODO: hack to not show pools or positions in the list of dest tokens
+          if (isZapAssetId(token)) {
+            continue;
+          }
           supported.add(tokenKey(token));
         }
       } catch (e) {
@@ -291,6 +298,7 @@ class QuoteCache {
           params.destChain,
           { nativeGas: params.nativeGas },
           params.recipient,
+          params.sender,
         )
         .then((result: QuoteResult) => {
           const pending = this.pending[key];

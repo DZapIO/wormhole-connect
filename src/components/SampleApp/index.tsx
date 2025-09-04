@@ -1,10 +1,9 @@
+import React, { useEffect, useState } from 'react';
 import './styles.css';
-import React, { useEffect } from 'react';
-import { useState } from 'react';
 
-import WormholeConnect from '../../WormholeConnect';
 import config from 'config';
 import type { WormholeConnectConfig } from 'config/types';
+import WormholeConnect from '../../WormholeConnect';
 
 /*
  *
@@ -33,21 +32,22 @@ import type { WormholeConnectConfig } from 'config/types';
  */
 import { routes } from '@wormhole-foundation/sdk';
 import {
-  MayanRoute,
-  MayanRouteWH,
-  MayanRouteMCTP,
-  MayanRouteSWIFT,
-  MayanRouteMONOCHAIN,
-} from '../../routes/mayan';
-import { NTT_TEST_CONFIG_TESTNET, NTT_TEST_CONFIG_MAINNET } from './consts';
-import { DEFAULT_ROUTES } from 'routes/operator';
-import { nttRoutes } from 'exports/ntt';
-import {
   cctpExecutorRoute,
-  cctpV2StandardExecutorRoute,
   cctpV2FastExecutorRoute,
+  cctpV2StandardExecutorRoute,
 } from 'exports/executor';
+import { nttRoutes } from 'exports/ntt';
+import { DZapRoute } from 'routes/dZap';
+import { DEFAULT_ROUTES } from 'routes/operator';
 import type { WormholeConnectTheme } from 'theme';
+import {
+  MayanRoute,
+  MayanRouteMCTP,
+  MayanRouteMONOCHAIN,
+  MayanRouteSWIFT,
+  MayanRouteWH,
+} from '../../routes/mayan';
+import { NTT_TEST_CONFIG_MAINNET, NTT_TEST_CONFIG_TESTNET } from './consts';
 
 const MAX_URL_SIZE = 30_000; // 30kb (HTTP header limit is set to 32kb)
 
@@ -70,6 +70,8 @@ const parseConfig = (config: string): WormholeConnectConfig => {
       window.CCTPRoute = routes.CCTPRoute;
       /* @ts-ignore */
       window.TBTCRoute = routes.TBTCRoute;
+      /* @ts-ignore */
+      window.DZapRoute = DZapRoute;
       /* @ts-ignore */
       window.MayanRoute = MayanRoute;
       /* @ts-ignore */
@@ -267,6 +269,10 @@ function SampleApp() {
                   </li>
                   <li>
                     <pre>TBTCRoute</pre>
+                    <i>{'RouteConstructor'}</i>
+                  </li>
+                  <li>
+                    <pre>DZapRoute</pre>
                     <i>{'RouteConstructor'}</i>
                   </li>
                   <li>
