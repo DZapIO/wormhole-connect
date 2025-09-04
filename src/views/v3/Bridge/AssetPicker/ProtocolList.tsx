@@ -30,7 +30,7 @@ function ProtocolList(props: Props) {
 
   const protocols = useMemo(() => {
     return config.protocols;
-  }, [config]);
+  }, []);
 
   const styles = useMemo(
     () => ({
@@ -137,7 +137,7 @@ function ProtocolList(props: Props) {
       ...protocol,
       id: protocol.id,
     }));
-  }, [supportedProtocols, protocols]);
+  }, [supportedProtocols]);
 
   const topProviders = useMemo(() => {
     const allProtocols = protocolList ?? [];
@@ -150,7 +150,7 @@ function ProtocolList(props: Props) {
     // otherwise we do not change its index in the top list
     if (
       selectedProtocol &&
-      selectedProviderIndex &&
+      selectedProviderIndex !== -1 &&
       selectedProviderIndex >= SHORT_LIST_SIZE
     ) {
       const selectedProtocolObj = allProtocols.find(
@@ -286,10 +286,6 @@ function ProtocolList(props: Props) {
         No protocols available for this chain
       </Typography>
     );
-  }
-
-  if (topProviders.length < 2) {
-    return null;
   }
 
   return (

@@ -21,9 +21,8 @@ export const ZapProvider: React.FC<ZapProviderProps> = ({ children }) => {
   const getPool = useCallback((pool: ZapPoolData): ZapAsset => {
     const zapAsset = getZapAssetFromPool(pool);
 
-    if (config.zapAssets.get(zapAsset.tokenId)) {
-      return zapAsset;
-    }
+    const cached = config.zapAssets.get(zapAsset.tokenId);
+    if (cached) return cached;
 
     config.zapAssets.add(zapAsset);
     config.zapAssets.persist();

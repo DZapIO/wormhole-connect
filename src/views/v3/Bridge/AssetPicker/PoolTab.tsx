@@ -7,7 +7,7 @@ import type { WalletData } from 'store/wallet';
 import type { Balances } from 'utils/wallet/types';
 import PoolList from 'views/v3/Bridge/AssetPicker/Asset/PoolList';
 import ProtocolList from './ProtocolList';
-import { getDefaultProvider } from 'utils/zap';
+import { getDefaultProtocol } from 'utils/zap';
 
 interface PoolsTabProps {
   isSource: boolean;
@@ -43,7 +43,7 @@ function PoolsTab({
   // Update selected protocol when chain changes
   useEffect(() => {
     if (setProtocol) {
-      setProtocol((prev) => getDefaultProvider(selectedChainConfig, prev));
+      setProtocol((prev) => getDefaultProtocol(selectedChainConfig, prev));
     }
   }, [selectedChainConfig, setProtocol]);
 

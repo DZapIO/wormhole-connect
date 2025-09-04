@@ -226,13 +226,15 @@ const AssetList = (props: Props) => {
         return (
           <AssetItem
             isSource={props.isSource}
-            key={asset.address?.toString() || asset.name}
+            key={asset.key}
             asset={asset}
             chain={props.selectedChainConfig.sdkName}
             onClick={() => {
               props.onSelectAsset?.(asset);
             }}
-            isSelected={asset.address === props.selectedAsset?.address}
+            isSelected={
+              props.selectedAsset ? asset.equals(props.selectedAsset) : false
+            }
             balance={props.balances?.[asset.key]?.balance}
           />
         );

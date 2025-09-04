@@ -67,11 +67,7 @@ export namespace DZapRoute {
 
 type Op = DZapRoute.Options;
 type Vp = DZapRoute.ValidatedParams;
-type Q = routes.Quote<
-  Op,
-  Vp,
-  ZapBuildTxnResponse & { amountUSD: string | null }
->;
+type Q = routes.Quote<Op, Vp, ZapQuoteResponse & { amountUSD: string | null }>;
 type QR = routes.QuoteResult<
   Op,
   Vp,
@@ -251,7 +247,7 @@ export class DZapRoute<N extends Network> extends routes.AutomaticRoute<
       recipient: (request.recipient?.address.address ||
         request.sender?.address.address) as HexString,
       refundee: request.sender?.address.address as HexString,
-      slippage: 0.5, // TODO: Add slippage control
+      slippage: params.options?.slippage ?? this.getDefaultOptions().slippage,
       account: request.sender?.address.toString() as HexString,
       amount: this.getParsedAmount(request, params.amount),
       // TODO: Add position and pool details
@@ -334,7 +330,6 @@ export class DZapRoute<N extends Network> extends routes.AutomaticRoute<
         eta: etaSeconds * 1000,
         details: {
           ...quote,
-          steps: [],
           amountUSD: getZapPoolAmountUSD(quote),
         },
         expires,
@@ -344,37 +339,12 @@ export class DZapRoute<N extends Network> extends routes.AutomaticRoute<
       if (axios.isAxiosError(e)) {
         const data = e?.response?.data;
 
-        if (data?.code === 'AMOUNT_TOO_SMALL') {
-          // When amount is too small, Mayan SDK returns errors in this format:
-          //
-          // {
-          //   code: "AMOUNT_TOO_SMALL",
-          //   data: { minAmountIn: 0.00055 },
-          //   message: "Amount too small (min ~0.00055 ETH)"
-          // }
-          //
-          // We parse this and return a standardized Wormhole SDK MinAmountError
-
-          const minAmountIn = data?.data?.minAmountIn;
-          const minAmount = this.getMinAmount(
-            minAmountIn,
-            request.source.decimals,
-          );
-
-          if (minAmount) {
-            return {
-              success: false,
-              error: new routes.MinAmountError(minAmount),
-            };
-          }
-        }
-
-        if (data?.msg) {
-          return {
-            success: false,
-            error: Error(`${data?.msg} ${{ cause: data }}`),
-          };
-        }
+        return {
+          success: false,
+          error: new Error(String(data?.msg ?? 'Request failed'), {
+            cause: data,
+          }),
+        };
       }
 
       return {
@@ -488,7 +458,8 @@ export class DZapRoute<N extends Network> extends routes.AutomaticRoute<
         srcToken: this.toDZapAddress(request.source.id),
         recipient: destinationAddress as HexString,
         refundee: originAddress as HexString,
-        slippage: 0.5, // TODO: Add slippage control
+        slippage:
+          quote.params.options?.slippage ?? this.getDefaultOptions().slippage,
         amount: this.getParsedAmount(request, quote.params.amount),
         estimateGas: true,
       };

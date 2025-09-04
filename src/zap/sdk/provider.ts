@@ -31,12 +31,11 @@ export class ZapDataProvider {
     chain: Chain,
     protocol: string,
     userAddress: string,
-    limit?: number,
   ) {
     if (!this.pc.isProtocolSupported(network, chain, protocol)) {
       return [];
     }
     const providerInstance = new this.pc();
-    return providerInstance.getPositions(chain, protocol, userAddress, limit);
+    return providerInstance.getPositions(chain, protocol, userAddress);
   }
 }

@@ -67,6 +67,10 @@ export const sortPoolsByPreference = (
     const balanceA = Number(balances[a.key]?.amountUSD || 0);
     const balanceB = Number(balances[b.key]?.amountUSD || 0);
 
+    if (!balanceA && !balanceB) {
+      return (b.zapPoolInfo?.apr || 0) - (a.zapPoolInfo?.apr || 0);
+    }
+
     if (balanceA !== balanceB) {
       return balanceB - balanceA;
     } else {

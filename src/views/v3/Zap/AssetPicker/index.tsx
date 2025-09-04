@@ -174,7 +174,6 @@ function AssetPicker(props: Props) {
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
-          ariaLabel: displayValue,
         }}
       >
         {displayValue}
@@ -323,7 +322,7 @@ function AssetPicker(props: Props) {
     if (
       props.isSource &&
       poolBalances.source.balances &&
-      isZapAsset(props.token)
+      isZapAsset(props.token?.tuple)
     ) {
       return props.quote?.details?.amountUSD ?? null;
     }

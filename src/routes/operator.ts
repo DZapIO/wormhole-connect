@@ -39,7 +39,7 @@ export interface QuoteParams {
   recipient?: string; // wallet may be undefined when not connected
 }
 
-export default class Routeperator {
+export default class RouteOperator {
   preference: string[];
   routes: Record<string, SDKv2Route>;
   quoteCache: QuoteCache;

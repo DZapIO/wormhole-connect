@@ -1,12 +1,11 @@
 import type { Chain } from '@wormhole-foundation/sdk';
 import config from 'config';
-import type { Token } from 'config/tokens';
 import type { ZapAsset } from 'config/zapAsset';
 import { useZap } from 'contexts/ZapContext';
 import { useCallback, useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import type { ZapPoolData } from 'zap/sdk';
 import { setDestToken } from 'store/transferInput';
+import type { ZapPoolData } from 'zap/sdk';
 
 type Props = {
   protocol?: string;
@@ -24,7 +23,7 @@ const computePoolsForChainAndProvider = async (
   protocol: string,
   getPool: (token: ZapPoolData) => ZapAsset | undefined,
   limit?: number,
-): Promise<Token[]> => {
+): Promise<ZapAsset[]> => {
   if (!chain) {
     return [];
   }

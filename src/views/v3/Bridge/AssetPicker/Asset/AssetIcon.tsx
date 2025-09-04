@@ -45,7 +45,7 @@ const AssetIcon = ({
         {asset.logo ? (
           <img src={asset.logo} alt={asset.symbol} width="100%" height="100%" />
         ) : (
-          asset.symbol?.charAt(0).toUpperCase() || 'T'
+          asset.symbol?.charAt(0)?.toUpperCase() || 'T'
         )}
       </Box>
     );

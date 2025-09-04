@@ -55,7 +55,6 @@ export class DZapDataProvider implements ZapDataProvider<PoolD, PosD> {
     chain: Chain,
     protocol: string,
     userAddress: string,
-    limit?: number,
   ): Promise<ZapPositionData<PosD>[]> {
     try {
       const chainId = getChainId(chain);

@@ -1,4 +1,4 @@
-import type { Chain } from '@wormhole-foundation/sdk';
+import type { Chain } from '@wormhole-foundation/sdk-connect';
 import config from 'config';
 import { getZapAssetKey } from 'config/zapAsset';
 import { DZapDataProvider } from './dZap';
@@ -41,7 +41,6 @@ export interface ZapPositionParams {
   chain: Chain;
   protocol: string;
   userAddress: string;
-  limit?: number;
 }
 
 function getPositionKey(position: ZapPositionData): string {
@@ -51,6 +50,10 @@ function getPositionKey(position: ZapPositionData): string {
     position.protocol,
     position.details?.nftId,
   );
+}
+
+function getPoolKey(pool: ZapPoolData): string {
+  return getZapAssetKey(pool.chain, pool.address.toString(), pool.protocol);
 }
 
 export default class ZapDataAggregator {
@@ -78,7 +81,7 @@ export default class ZapDataAggregator {
     this.preference = preference;
   }
 
-  async forEachZap<T>(callback: forEachCallback<T>): Promise<T[]> {
+  async forEach<T>(callback: forEachCallback<T>): Promise<T[]> {
     return Promise.all(
       this.preference.map((name) => callback(name, this.zapRoutes[name])),
     );
@@ -88,19 +91,30 @@ export default class ZapDataAggregator {
     const supported: Set<string> = new Set();
     const pools: ZapPoolData[] = [];
 
-    await this.forEachZap(async (name, route) => {
+    await this.forEach(async (name, route) => {
       try {
+        if (
+          !route.isDataProviderSupported(
+            config.network,
+            params.chain,
+            params.protocol,
+          )
+        ) {
+          return;
+        }
         const zapPoolResults = await route.getPools(
           config.network,
           params.chain,
           params.protocol,
+          params.limit,
         );
 
         for (const pool of zapPoolResults) {
-          if (supported.has(pool.address.toLowerCase())) {
+          const key = getPoolKey(pool);
+          if (supported.has(key)) {
             continue;
           }
-          supported.add(pool.address.toLowerCase());
+          supported.add(key);
           pools.push(pool);
         }
       } catch (e) {
@@ -120,21 +134,30 @@ export default class ZapDataAggregator {
     const supported: Set<string> = new Set();
     const positions: ZapPositionData[] = [];
 
-    await this.forEachZap(async (name, route) => {
+    await this.forEach(async (name, route) => {
       try {
+        if (
+          !route.isDataProviderSupported(
+            config.network,
+            params.chain,
+            params.protocol,
+          )
+        ) {
+          return;
+        }
         const zapPositionResults = await route.getPositions(
           config.network,
           params.chain,
           params.protocol,
           params.userAddress,
-          params.limit,
         );
 
         for (const position of zapPositionResults) {
-          if (supported.has(getPositionKey(position))) {
+          const key = getPositionKey(position);
+          if (supported.has(key)) {
             continue;
           }
-          supported.add(getPositionKey(position));
+          supported.add(key);
           positions.push(position);
         }
       } catch (e) {

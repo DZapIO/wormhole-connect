@@ -2,7 +2,7 @@ import type {
   Chain,
   Network,
   amount as sdkAmount,
-} from '@wormhole-foundation/sdk';
+} from '@wormhole-foundation/sdk-connect';
 
 type Amount = sdkAmount.Amount;
 
@@ -16,7 +16,6 @@ export interface ZapDataProvider<P = any, T = any> {
     chain: Chain,
     protocol: string,
     userAddress: string,
-    limit?: number,
   ): Promise<ZapPositionData<T>[]>;
 }
 

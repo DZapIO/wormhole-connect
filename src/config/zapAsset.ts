@@ -95,7 +95,8 @@ export function isZapAsset(tuple: any): tuple is TokenTuple {
 export function getZapAssetTuple(zapAsset: ZapAsset): TokenTuple {
   const zapAssetKey = getTupleKeyFromZapAssetFields({
     address: zapAsset.addressString,
-    ...zapAsset.zapPoolInfo,
+    protocol: zapAsset.zapPoolInfo?.protocol,
+    nftId: zapAsset.zapPositionDetails?.nftId,
   });
 
   return [zapAsset.chain, zapAssetKey];
@@ -103,8 +104,9 @@ export function getZapAssetTuple(zapAsset: ZapAsset): TokenTuple {
 
 export function getTupleFromZapAssetId(zapAssetId: ZapAssetId): TokenTuple {
   const key = getTupleKeyFromZapAssetFields({
-    ...zapAssetId,
     address: zapAssetId.address.toString(),
+    protocol: zapAssetId.protocol,
+    nftId: zapAssetId.nftId,
   });
 
   return [zapAssetId.chain, key];

@@ -20,9 +20,6 @@ export interface ChainBalanceRequest {
 // Map of chain+wallet+protocol -> balances
 type BalanceMap = Record<string, Balances>;
 
-// Constants
-const MAX_TOKENS_TO_PROCESS = 100;
-
 // Helper to create request key
 const getRequestKey = (chain: Chain, wallet: WalletData, protocol: string) =>
   `${chain}-${wallet.address}-${protocol}`;
@@ -68,7 +65,7 @@ const useGetPoolBalances = ({
         const zapAsset = getPool(pool);
         if (zapAsset) {
           // Extract balance from position data
-          const balanceValue = BigInt(pool.amount.amount) || 0n;
+          const balanceValue = BigInt(pool.amount?.amount || 0);
           const balance = amount.fromBaseUnits(balanceValue, zapAsset.decimals);
           const balanceData = {
             balance,
@@ -133,7 +130,6 @@ const useGetPoolBalances = ({
           chain,
           userAddress: wallet.address,
           protocol,
-          limit: MAX_TOKENS_TO_PROCESS,
         });
 
         await processPositionResults(
