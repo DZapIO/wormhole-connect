@@ -18,7 +18,6 @@ interface PoolsTabProps {
   sortedPoolList?: Token[];
   wallet: WalletData;
   onTokenSelect: (value: Token) => void;
-  isConnectingWallet?: boolean;
   isPoolsFetching?: boolean;
   isPoolsBalancesFetching?: boolean;
   poolBalances?: Balances;
@@ -34,7 +33,6 @@ function PoolsTab({
   sortedPoolList,
   wallet,
   onTokenSelect,
-  isConnectingWallet,
   isPoolsFetching,
   isPoolsBalancesFetching,
   poolBalances,
@@ -84,8 +82,7 @@ function PoolsTab({
               pools={sortedPoolList || []}
               wallet={wallet}
               onSelectPool={onTokenSelect}
-              provider={selectedProtocol}
-              isConnectingWallet={isConnectingWallet}
+              protocol={selectedProtocol}
               isPoolsFetching={Boolean(isPoolsFetching)}
               isPoolsBalancesFetching={Boolean(isPoolsBalancesFetching)}
               poolBalances={poolBalances}

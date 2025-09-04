@@ -15,8 +15,7 @@ type Props = {
   isSource: boolean;
   selectedChainConfig: ChainConfig;
   wallet: WalletData;
-  provider: string;
-  isConnectingWallet?: boolean;
+  protocol: string;
   assets: ZapAsset[];
   balances: Balances;
   isFetchingBalances: boolean;
@@ -36,23 +35,7 @@ const AssetList = (props: Props) => {
   const isFetchingBalances = props.isFetchingBalances;
 
   const emptyMessage = useMemo(() => {
-    let message = '';
-
-    if (props.isSource) {
-      if (!props.wallet?.address) {
-        message = 'Connect wallet to see available pools';
-      } else {
-        message = 'No pools found for this provider';
-      }
-    } else {
-      if (!props.wallet?.address && !props.isConnectingWallet) {
-        message = 'Connect your wallet to view positions';
-      } else if (props.isConnectingWallet) {
-        message = 'Connecting wallet...';
-      } else {
-        message = 'No positions found for this provider';
-      }
-    }
+    const message = `No pools found for ${props.protocol} on ${props.selectedChainConfig.displayName}`;
 
     return (
       <Typography variant="body2" color={theme.palette.grey.A400}>
@@ -60,9 +43,8 @@ const AssetList = (props: Props) => {
       </Typography>
     );
   }, [
-    props.isSource,
-    props.wallet?.address,
-    props.isConnectingWallet,
+    props.protocol,
+    props.selectedChainConfig.displayName,
     theme.palette.grey.A400,
   ]);
 
@@ -104,50 +86,17 @@ const AssetList = (props: Props) => {
 
   // Determine the current state of the list
   const listState = useMemo(() => {
-    if (props.isSource) {
-      // Currently fetching initial data
-      if (isFetching) {
-        return 'loading';
-      }
-
-      // We have data but no pools to show
-      if (assets.length === 0) {
-        return 'empty';
-      }
-
-      // Normal state - show the pool list
-      return 'ready';
-    } else {
-      // No wallet connected - show empty state with connect message
-      if (!props.wallet?.address && !props.isConnectingWallet) {
-        return 'empty';
-      }
-
-      // Wallet is connecting - show loading
-      if (props.isConnectingWallet) {
-        return 'loading';
-      }
-
-      // Currently fetching positions for connected wallet
-      if (isFetching && props.wallet?.address) {
-        return 'loading';
-      }
-
-      // We have a connected wallet but no positions to show
-      if (props.wallet?.address && assets.length === 0) {
-        return 'empty';
-      }
-
-      // Normal state - show the position list
-      return 'ready';
+    // Currently fetching initial data
+    if (isFetching) {
+      return 'loading';
     }
-  }, [
-    props.isSource,
-    isFetching,
-    assets.length,
-    props.wallet?.address,
-    props.isConnectingWallet,
-  ]);
+
+    // We have data but no pools to show
+    if (assets.length === 0) {
+      return 'empty';
+    }
+    return 'ready';
+  }, [isFetching, assets.length]);
 
   const shouldShowLoadingState = listState === 'loading';
   const shouldShowEmptyMessage = listState === 'empty';

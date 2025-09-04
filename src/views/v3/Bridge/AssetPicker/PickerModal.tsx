@@ -180,7 +180,6 @@ function AssetPickerPopover({
                 sortedPoolList={sortedPoolList}
                 wallet={wallet}
                 onTokenSelect={onTokenSelect}
-                isConnectingWallet={isConnectingWallet}
                 isPoolsFetching={isPoolsFetching}
                 isPoolsBalancesFetching={isPoolsBalancesFetching}
                 poolBalances={poolBalances}

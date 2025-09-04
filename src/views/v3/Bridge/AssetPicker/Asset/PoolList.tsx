@@ -12,7 +12,7 @@ type Props = {
   selectedPool?: ZapAsset;
   wallet: WalletData;
   onSelectPool: (pool: ZapAsset) => void;
-  provider: string;
+  protocol: string;
   isConnectingWallet?: boolean;
   pools: ZapAsset[];
   isPoolsFetching: boolean;
@@ -28,8 +28,7 @@ const PoolList = (props: Props) => {
       selectedAsset={props.selectedPool}
       wallet={props.wallet}
       onSelectAsset={props.onSelectPool}
-      provider={props.provider}
-      isConnectingWallet={props.isConnectingWallet}
+      protocol={props.protocol}
       assets={props.pools}
       loading={props.isPoolsFetching}
       isFetchingBalances={props.isPoolsBalancesFetching}
