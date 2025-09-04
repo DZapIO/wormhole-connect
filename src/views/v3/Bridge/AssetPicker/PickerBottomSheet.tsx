@@ -151,8 +151,8 @@ function AssetPickerDrawer({
               },
             }}
           >
-            <Tab label="Tokens" />
-            <Tab label="Protocols" />
+            <Tab label="Tokens" value="tokens" />
+            <Tab label="Pools" value="pools" />
           </Tabs>
 
           {/* Tab Content */}
