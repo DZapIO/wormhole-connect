@@ -1,16 +1,17 @@
-import React, { memo } from 'react';
-import { useTheme } from '@mui/material';
+import { Box, Tab, Tabs, useTheme } from '@mui/material';
 import Popover from '@mui/material/Popover';
-import { bindPopover } from 'material-ui-popup-state/hooks';
-import type { PopupState } from 'material-ui-popup-state/hooks';
 import { type Chain } from '@wormhole-foundation/sdk';
+import type { PopupState } from 'material-ui-popup-state/hooks';
+import { bindPopover } from 'material-ui-popup-state/hooks';
+import React, { memo, useState } from 'react';
 
+import type { Token } from 'config/tokens';
 import type { ChainConfig } from 'config/types';
 import type { WalletData } from 'store/wallet';
-import type { Token } from 'config/tokens';
 import type { Balances } from 'utils/wallet/types';
 import ChainList from 'views/v3/Bridge/AssetPicker/ChainList';
 import TokenList from 'views/v3/Bridge/AssetPicker/TokenList';
+import ProtocolTab from './PoolTab';
 
 interface AssetPickerPopoverProps {
   popupState: PopupState;
@@ -21,10 +22,14 @@ interface AssetPickerPopoverProps {
   setShowChainSearch: (value: boolean) => void;
   wallet: WalletData;
   sortedTokens: Token[];
+  sortedPoolList?: Token[];
   balances: Balances;
+  poolBalances?: Balances;
   isFetchingBalances: boolean;
   isConnectingWallet?: boolean;
   isFetchingTokens?: boolean;
+  isPoolsFetching?: boolean;
+  isPoolsBalancesFetching?: boolean;
   isSameChainSwap: boolean;
   token?: Token;
   sourceToken?: Token;
@@ -33,6 +38,12 @@ interface AssetPickerPopoverProps {
   setSearchQuery: (value: string) => void;
   onChainSelect: (value: Chain) => void;
   onTokenSelect: (value: Token) => void;
+  // Zap-specific props (optional)
+  selectedProtocol?: string;
+  showProtocolSearch?: boolean;
+  setShowProtocolSearch?: (value: boolean) => void;
+  showTabs?: boolean; // Controls whether to show tabs for Protocols
+  setProtocol?: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
 function AssetPickerPopover({
@@ -44,10 +55,14 @@ function AssetPickerPopover({
   setShowChainSearch,
   wallet,
   sortedTokens,
+  sortedPoolList,
   balances,
+  poolBalances,
   isFetchingBalances,
   isConnectingWallet,
   isFetchingTokens,
+  isPoolsFetching,
+  isPoolsBalancesFetching,
   isSameChainSwap,
   token,
   sourceToken,
@@ -56,8 +71,22 @@ function AssetPickerPopover({
   setSearchQuery,
   onChainSelect,
   onTokenSelect,
+  setProtocol,
+  // Zap-specific props (optional)
+  selectedProtocol,
+  showProtocolSearch,
+  setShowProtocolSearch,
+  showTabs = false,
 }: AssetPickerPopoverProps) {
   const theme = useTheme();
+  const [activeTab, setActiveTab] = useState<'tokens' | 'pools'>('tokens');
+
+  const handleTabChange = (
+    event: React.SyntheticEvent,
+    newValue: 'tokens' | 'pools',
+  ) => {
+    setActiveTab(newValue);
+  };
 
   return (
     <Popover
@@ -100,7 +129,70 @@ function AssetPickerPopover({
         wallet={wallet}
         onChainSelect={onChainSelect}
       />
-      {!showChainSearch && chainConfig && (
+
+      {/* Conditional rendering based on whether tabs are enabled (Zap mode) */}
+      {!showChainSearch && showTabs && (
+        <>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            variant="fullWidth"
+            sx={{
+              borderBottom: `1px solid ${theme.palette.divider}`,
+              '& .MuiTab-root': {
+                color: theme.palette.text.secondary,
+                '&.Mui-selected': {
+                  color: theme.palette.primary.main,
+                },
+              },
+            }}
+          >
+            <Tab label="Tokens" value="tokens" />
+            <Tab label="Pools" value="pools" />
+          </Tabs>
+
+          <Box>
+            {activeTab === 'tokens' && chainConfig && (
+              <TokenList
+                tokenList={sortedTokens}
+                balances={balances}
+                isFetchingBalances={isFetchingBalances}
+                isConnectingWallet={isConnectingWallet}
+                isFetching={isFetchingTokens}
+                selectedChainConfig={chainConfig}
+                selectedToken={token}
+                sourceToken={sourceToken}
+                isSameChainSwap={isSameChainSwap}
+                isSource={isSource}
+                wallet={wallet}
+                searchQuery={searchQuery}
+                onSearchQueryChange={setSearchQuery}
+                onSelectToken={onTokenSelect}
+              />
+            )}
+
+            {activeTab === 'pools' && (
+              <ProtocolTab
+                isSource={isSource}
+                selectedProtocol={selectedProtocol}
+                showProtocolSearch={showProtocolSearch}
+                setShowProtocolSearch={setShowProtocolSearch}
+                selectedChainConfig={chainConfig}
+                sortedPoolList={sortedPoolList}
+                wallet={wallet}
+                onTokenSelect={onTokenSelect}
+                isConnectingWallet={isConnectingWallet}
+                isPoolsFetching={isPoolsFetching}
+                isPoolsBalancesFetching={isPoolsBalancesFetching}
+                poolBalances={poolBalances}
+                setProtocol={setProtocol}
+              />
+            )}
+          </Box>
+        </>
+      )}
+
+      {!showChainSearch && !showTabs && chainConfig && (
         <TokenList
           tokenList={sortedTokens}
           balances={balances}

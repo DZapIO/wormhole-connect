@@ -86,7 +86,9 @@ export function createUiConfig(customConfig: UiConfig): UiConfig {
   return {
     ...customConfig,
     showFooter: customConfig.showFooter ?? true, // Footer is shown by default if not specified
-    experimental: customConfig.experimental ?? {},
+    experimental: customConfig.experimental ?? {
+      enableUIRefreshV3: true,
+    },
     walletConnectProjectId:
       customConfig?.walletConnectProjectId ??
       import.meta.env.REACT_APP_WALLET_CONNECT_PROJECT_ID,

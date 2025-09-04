@@ -1,3 +1,14 @@
+import CopyIcon from '@mui/icons-material/ContentCopy';
+import DoneIcon from '@mui/icons-material/Done';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import { useMediaQuery, useTheme } from '@mui/material';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
+import type { Chain } from '@wormhole-foundation/sdk';
+import { amount as sdkAmount } from '@wormhole-foundation/sdk';
 import React, {
   useCallback,
   useEffect,
@@ -5,65 +16,56 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { useMediaQuery, useTheme } from '@mui/material';
-import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
-import Stack from '@mui/material/Stack';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import CopyIcon from '@mui/icons-material/ContentCopy';
-import DoneIcon from '@mui/icons-material/Done';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import { amount as sdkAmount } from '@wormhole-foundation/sdk';
-import type { Chain } from '@wormhole-foundation/sdk';
+import { useDispatch, useSelector } from 'react-redux';
 
+import ConfigurablePageHeader from 'components/ConfigurablePageHeader';
 import FooterNavBar from 'components/FooterNavBar';
 import Header from 'components/Header';
 import AlertBannerV3 from 'components/v3/AlertBanner';
-import Button from 'components/v3/Button';
 import config from 'config';
-import type { Token } from 'config/tokens';
+
+import { useConnectToLastUsedWallet } from 'hooks/useConnectToLastUsedWallet';
+import useGetTokenBalances from 'hooks/useGetTokenBalances';
+
+import Button from 'components/v3/Button';
+import { type Token } from 'config/tokens';
 import { useTokens } from 'contexts/TokensContext';
-import useComputeDestinationTokens from 'hooks/useComputeDestinationTokens';
-import { useSortedRoutesWithQuotes } from 'hooks/useSortedRoutesWithQuotes';
 import { useAmountValidation } from 'hooks/useAmountValidation';
+import useComputeDestinationTokens from 'hooks/useComputeDestinationTokens';
 import useConfirmTransaction from 'hooks/useConfirmTransaction';
 import { useGetTokens } from 'hooks/useGetTokens';
-import useGetTokenBalances from 'hooks/useGetTokenBalances';
+import { useSortedRoutesWithQuotes } from 'hooks/useSortedRoutesWithQuotes';
 import { useWalletCompatibility } from 'hooks/useWalletCompatibility';
 import HistoryIcon from 'icons/History';
 import PoweredByIcon from 'icons/PoweredBy';
 import type { RootState } from 'store';
 import {
+  clearDestToken,
+  clearToken,
   selectFromChain,
   selectToChain,
-  setToken,
   setDestToken,
+  setToken,
   setTransferRoute,
-  clearToken,
-  clearDestToken,
 } from 'store/transferInput';
 import { copyTextToClipboard } from 'utils';
+import { getFilteredChains } from 'utils/sdkv2';
 import { OPACITY } from 'utils/style';
-import ConfigurablePageHeader from 'components/ConfigurablePageHeader';
 import { isTransferValid, useValidate } from 'utils/transferValidation';
 import { TransferWallet } from 'utils/wallet';
-import { useConnectToLastUsedWallet } from 'hooks/useConnectToLastUsedWallet';
-import WalletConnector from 'views/v3/Bridge/WalletConnector';
-import AssetPicker from 'views/v3/Bridge/AssetPicker';
-import Routes from 'views/v3/Bridge/Routes';
 import SwapInputs from 'views/v3/Bridge/SwapInputs';
-import TxHistoryWidget from 'views/v3/TxHistory/Widget';
+import WalletConnector from 'views/v3/Bridge/WalletConnector';
+import AmountValidationError from '../Bridge/AmountValidationError';
+import Routes from '../Bridge/Routes';
 import TxHistory from '../TxHistory';
-import AmountValidationError from './AmountValidationError';
-import { getFilteredChains } from 'utils/sdkv2';
+import TxHistoryWidget from '../TxHistory/Widget';
+import AssetPicker from './AssetPicker';
 
-export type BridgeProps = {
+export type ZapProps = {
   showHistory?: boolean;
 };
 
-function Bridge(props: BridgeProps) {
+function Zap(props: ZapProps) {
   const theme: any = useTheme();
   const dispatch = useDispatch();
 
@@ -465,7 +467,6 @@ function Bridge(props: BridgeProps) {
       <Button
         disabled={confirmTransactionDisabled}
         data-testid="confirm-transaction-button"
-        aria-label="Confirm transaction"
         variant="primary"
         styleOverrides={styles.confirmTransaction}
         onClick={() => onConfirm()}
@@ -655,4 +656,4 @@ function Bridge(props: BridgeProps) {
   );
 }
 
-export default React.memo(Bridge);
+export default React.memo(Zap);

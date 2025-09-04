@@ -10,12 +10,15 @@ import type {
   TokenId,
   Network,
   NativeAddress,
+  Chain,
 } from '@wormhole-foundation/sdk';
 import { chainToPlatform } from '@wormhole-foundation/sdk';
-import { getWormholeContextV2 } from 'config';
+import config, { getWormholeContextV2 } from 'config';
 import { Contract } from 'ethers';
 import type { SuiClient } from '@mysten/sui/client';
-
+import type { Token, TokenTuple } from 'config/tokens';
+import type { ZapAsset } from 'config/zapAsset';
+import { isZapAsset } from 'config/zapAsset';
 interface TokenMetadataFromRpc {
   symbol: string;
   name: string;
@@ -117,3 +120,39 @@ export async function getTokenMetadataSui(
     return undefined;
   }
 }
+
+export const findTokenByAddressOrSymbol = (
+  chain: Chain,
+  addressOrSymbol: string,
+): Token | undefined => {
+  const regularToken = config.tokens.findByAddressOrSymbol(
+    chain,
+    addressOrSymbol,
+  );
+  if (regularToken) return regularToken;
+  const zapAsset = config.zapAssets.findByAddressOrSymbol(
+    chain,
+    addressOrSymbol,
+  );
+  return zapAsset;
+};
+
+export const findTokenBySymbol = (
+  chain: Chain,
+  symbol: string,
+): Token | undefined => {
+  const regularToken = config.tokens.findBySymbol(chain, symbol);
+  if (regularToken) return regularToken;
+  const zapAsset = config.zapAssets.findBySymbol(chain, symbol);
+  return zapAsset;
+};
+
+export const getTokenFromTuple = (
+  tokenTuple: TokenTuple,
+): Token | ZapAsset | undefined => {
+  if (isZapAsset(tokenTuple)) {
+    return config.zapAssets.get(tokenTuple);
+  }
+  const regularToken = config.tokens.get(tokenTuple);
+  if (regularToken) return regularToken;
+};

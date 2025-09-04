@@ -1,0 +1,113 @@
+import type { ZapProtocolsConfig } from '../types';
+
+export const MAINNET_ZAP_PROTOCOLS: ZapProtocolsConfig = {
+  aave: {
+    name: 'Aave',
+    icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/7278.png',
+    id: 'aave',
+    supportedChains: [
+      'Arbitrum',
+      'Base',
+      'Ethereum',
+      'Polygon',
+      'Bsc',
+      'Optimism',
+    ],
+  },
+  aerodrome: {
+    name: 'Aerodrome',
+    id: 'aerodrome',
+    icon: 'https://aerodrome.finance/svg/AERO/appLogo.svg',
+    supportedChains: ['Base'],
+  },
+  balancer: {
+    name: 'Balancer',
+    id: 'balancer',
+    icon: 'https://balancer.fi/favicon.ico',
+    supportedChains: [
+      'Ethereum',
+      'Arbitrum',
+      'Avalanche',
+      'Base',
+      'Polygon',
+      'Optimism',
+    ],
+  },
+  bedrock: {
+    name: 'Bedrock',
+    icon: 'https://www.bedrock.technology/favicon.ico',
+    id: 'bedrock',
+    supportedChains: [
+      'Ethereum',
+      'Bsc',
+      'Berachain',
+      'Arbitrum',
+      'Optimism',
+      'Mantle',
+    ],
+  },
+  compound: {
+    name: 'Compound',
+    icon: 'https://v3-app.compound.finance/favicon.ico',
+    id: 'compound',
+    supportedChains: [
+      'Ethereum',
+      'Arbitrum',
+      'Base',
+      'Polygon',
+      'Optimism',
+      'Mantle',
+      'Scroll',
+      'Linea',
+    ],
+  },
+  ethena: {
+    name: 'Ethena',
+    icon: 'https://app.ethena.fi/shared/ethena.svg',
+    id: 'ethena',
+    supportedChains: ['Ethereum'],
+  },
+  etherfi: {
+    name: 'EtherFi',
+    icon: 'https://www.ether.fi/images/favicon/favicon-dark-32x32.png',
+    id: 'etherfi',
+    supportedChains: [
+      'Ethereum',
+      'Base',
+      'Arbitrum',
+      'Scroll',
+      'Berachain',
+      'Linea',
+    ],
+  },
+  extrafixlend: {
+    name: 'Extrafi Xlend',
+    icon: 'https://xlend.extrafi.io/brand/favicon.ico',
+    id: 'extrafixlend',
+    supportedChains: ['Optimism', 'Base'],
+  },
+  moonwell: {
+    name: 'Moonwell',
+    icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/20734.png',
+    id: 'moonwell',
+    supportedChains: ['Base', 'Optimism', 'Moonbeam'],
+  },
+  puffer: {
+    name: 'Puffer',
+    icon: 'https://www.puffer.fi/favicon/favicon-32x32.png',
+    id: 'puffer',
+    supportedChains: ['Ethereum'],
+  },
+  resolv: {
+    name: 'Resolv',
+    icon: 'https://s2.coinmarketcap.com/static/img/coins/64x64/32873.png',
+    id: 'resolv',
+    supportedChains: ['Ethereum'],
+  },
+  silo: {
+    name: 'Silo',
+    icon: 'https://v2.silo.finance/favicon.ico',
+    id: 'silo',
+    supportedChains: ['Arbitrum', 'Sonic', 'Ink'],
+  },
+};

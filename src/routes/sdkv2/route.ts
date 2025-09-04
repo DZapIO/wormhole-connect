@@ -2,24 +2,23 @@ import type {
   Chain,
   ChainContext,
   Network,
-  TokenId as TokenId,
-  TransactionId,
   Signer,
+  TokenId,
+  TransactionId,
 } from '@wormhole-foundation/sdk';
 import {
-  Wormhole,
-  routes,
   chainToPlatform,
   isSameToken,
+  routes,
   TransferState,
+  Wormhole,
 } from '@wormhole-foundation/sdk';
 import type { Token } from 'config/tokens';
 
 import { amount as sdkAmount } from '@wormhole-foundation/sdk';
-import { AsyncCache } from 'utils/AsyncCache';
 import config, { getWormholeContextV2 } from 'config';
-import { sleep } from 'utils';
-import { isFrankensteinToken } from 'utils';
+import { isFrankensteinToken, sleep } from 'utils';
+import { AsyncCache } from 'utils/AsyncCache';
 import { isNttToken } from 'utils/ntt';
 
 type Amount = sdkAmount.Amount;
@@ -28,6 +27,7 @@ type Amount = sdkAmount.Amount;
 export class SDKv2Route {
   // TODO: remove this
   IS_TOKEN_BRIDGE_ROUTE = false;
+  IS_ZAP_ROUTE = false;
 
   constructor(readonly rc: routes.RouteConstructor) {
     this.IS_TOKEN_BRIDGE_ROUTE = [
@@ -35,6 +35,8 @@ export class SDKv2Route {
       'AutomaticTokenBridge',
       'TokenBridgeExecutorRoute',
     ].includes(rc.meta.name);
+
+    this.IS_ZAP_ROUTE = ['DZap'].includes(rc.meta.name);
   }
 
   private tokenCache = new AsyncCache<TokenId[]>(24 * 60 * 60 * 1000); // 24 hour TTL
@@ -143,10 +145,17 @@ export class SDKv2Route {
       }
     };
 
-    const destTokens = await this.tokenCache.requestWithCache(
-      cacheKey,
-      routeSupportedTokenFetcher,
-    );
+    let destTokens: TokenId[] = [];
+
+    // TODO: we should not have to do this
+    if (this.IS_ZAP_ROUTE) {
+      destTokens = await routeSupportedTokenFetcher();
+    } else {
+      destTokens = await this.tokenCache.requestWithCache(
+        cacheKey,
+        routeSupportedTokenFetcher,
+      );
+    }
 
     const filteredTokens = destTokens.filter((t) => {
       const token = config.tokens.get(t);
@@ -172,6 +181,7 @@ export class SDKv2Route {
     destChain: Chain,
     options?: routes.AutomaticTokenBridgeRoute.Options,
     recipient?: string,
+    sender?: string,
   ): Promise<
     [
       routes.Route<Network>,
@@ -185,6 +195,7 @@ export class SDKv2Route {
       sourceChain,
       destChain,
       recipient,
+      sender,
     );
 
     const wh = await getWormholeContextV2();
@@ -209,6 +220,7 @@ export class SDKv2Route {
     sourceChain: Chain,
     destChain: Chain,
     recipient?: string,
+    sender?: string,
   ): Promise<routes.RouteTransferRequest<Network>> {
     const sourceContext = (await this.getV2ChainContext(sourceChain)).context;
     const destContext = (await this.getV2ChainContext(destChain)).context;
@@ -223,6 +235,7 @@ export class SDKv2Route {
         recipient: recipient
           ? Wormhole.chainAddress(destChain, recipient)
           : undefined,
+        sender: sender ? Wormhole.chainAddress(sourceChain, sender) : undefined,
       },
       sourceContext,
       destContext,
@@ -238,6 +251,7 @@ export class SDKv2Route {
     toChain: Chain,
     options?: routes.AutomaticTokenBridgeRoute.Options,
     recipient?: string,
+    sender?: string,
   ): Promise<routes.QuoteResult<routes.Options>> {
     if (!fromChain || !toChain) {
       throw new Error('Need both chains to get a quote from SDKv2');
@@ -251,6 +265,7 @@ export class SDKv2Route {
       toChain,
       options,
       recipient,
+      sender,
     );
 
     if (!quote.success) {
@@ -278,6 +293,7 @@ export class SDKv2Route {
       toChain,
       options,
       recipientAddress,
+      signer.address(),
     );
 
     if (!quote.success) {

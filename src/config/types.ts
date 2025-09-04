@@ -3,11 +3,11 @@ import type { ChainResourceMap, WormholeConfig } from 'sdklegacy';
 
 // SDKv2
 import type {
-  Network,
-  Wormhole as WormholeV2,
-  Chain,
   AttestationReceipt,
+  Chain,
+  Network,
   routes,
+  Wormhole as WormholeV2,
 } from '@wormhole-foundation/sdk';
 
 import type { PriorityFeeOptions } from '@wormhole-foundation/sdk-solana';
@@ -19,9 +19,11 @@ import type {
 } from 'telemetry/types';
 
 import type RouteOperator from 'routes/operator';
-import type { UiConfig } from './ui';
 import type { TransferInfo } from 'utils/sdkv2';
+import type ZapDataAggregator from 'zap/aggregator';
 import type { Token, TokenCache, TokenTuple } from './tokens';
+import type { UiConfig } from './ui';
+import type { ZapAssetCache } from './zapAsset';
 
 export * from './ui';
 
@@ -117,6 +119,8 @@ export interface WormholeConnectConfig {
   tokens?: (string | TokenTuple)[];
   routes?: routes.RouteConstructor<any>[];
 
+  zapProtocols?: ZapProtocolsConfig;
+
   // Custom tokens
   tokensConfig?: TokensConfig;
 
@@ -177,11 +181,15 @@ export interface InternalConfig<N extends Network> {
 
   tokens: TokenCache;
   tokenWhitelist?: (string | TokenTuple)[];
+  zapAssets: ZapAssetCache;
+  zapProtocols: ZapProtocolsConfig;
 
   chains: ChainsConfig;
   chainsArr: ChainConfig[];
 
   routes: RouteOperator;
+
+  zapDataAggregator: ZapDataAggregator;
 
   // Callbacks
   triggerEvent: TriggerEventHandler;
@@ -227,6 +235,17 @@ export type ChainsConfig = {
   [chain in Chain]?: ChainConfig;
 };
 
+export type ZapProtocolConfig = {
+  id: string;
+  name: string;
+  icon: string;
+  supportedChains: Chain[];
+};
+
+export type ZapProtocolsConfig = {
+  [protocol: string]: ZapProtocolConfig;
+};
+
 export type RpcMapping = { [chain in Chain]?: string };
 
 export type GuardianSetData = {
@@ -240,6 +259,7 @@ export type NetworkData = {
   wrappedTokens: WrappedTokenAddresses;
   rpcs: RpcMapping;
   guardianSet: GuardianSetData;
+  zapProtocols?: ZapProtocolsConfig;
 };
 
 export type WrappedTokenAddresses = {
