@@ -35,7 +35,7 @@ import BridgeV3 from 'views/v3/Bridge';
 import RedeemV3 from 'views/v3/Redeem';
 import ZapV3 from 'views/v3/Zap';
 
-const AppRouterContent: React.FC = () => {
+const AppRouterContent = () => {
   const theme = useTheme();
   const routeContext = useContext(RouteContext);
   const route = useSelector((state: RootState) => state.router.route);

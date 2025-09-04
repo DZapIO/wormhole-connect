@@ -13,7 +13,7 @@ import TokenIcon from 'icons/TokenIcons';
 import type { Token } from 'config/tokens';
 
 import type { Chain, amount as sdkAmount } from '@wormhole-foundation/sdk';
-import { chainDisplayName, getTokenExplorerUrl } from 'utils';
+import { chainDisplayName, getTokenExplorerUrl, getTokenSymbol } from 'utils';
 import ChainIcon from 'icons/ChainIcons';
 import Color from 'color';
 import TokenBalance from 'components/TokenBalance';
@@ -72,6 +72,8 @@ function TokenItem(props: TokenItemProps) {
   const explorerURL = address ? getTokenExplorerUrl(chain, address) : '';
   const addressDisplay = `${token.shortAddress}`;
 
+  const displaySymbol = getTokenSymbol(token);
+
   return (
     <ListItemButton
       sx={{
@@ -87,7 +89,7 @@ function TokenItem(props: TokenItemProps) {
           <TokenIcon icon={props.token.icon} />
         </ListItemIcon>
         <div>
-          <Typography>{token.display}</Typography>
+          <Typography>{displaySymbol}</Typography>
 
           <Box display="flex">
             {token.tokenBridgeOriginalTokenId ? (
