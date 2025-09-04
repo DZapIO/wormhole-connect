@@ -24,7 +24,6 @@ import Terms from './views/Terms';
 import TxSearch from './views/TxSearch';
 
 import { Box } from '@mui/material';
-import TabSelector from 'components/TabSelector';
 import { RouteContext } from 'contexts/RouteContext';
 import SvgDefs from 'icons/SvgDefs';
 import BridgeV2 from 'views/v2/Bridge';
@@ -33,7 +32,6 @@ import TxHistoryV2 from 'views/v2/TxHistory';
 import type { BridgeProps } from 'views/v3/Bridge';
 import BridgeV3 from 'views/v3/Bridge';
 import RedeemV3 from 'views/v3/Redeem';
-import ZapV3 from 'views/v3/Zap';
 
 const AppRouterContent = () => {
   const theme = useTheme();
@@ -96,11 +94,11 @@ const AppRouterContent = () => {
   // TODO: Deprecate with UI refresh v3
   const txHistoryView = useMemo(() => {
     return UIRefreshV3Enabled ? (
-      getBridgeView({ showHistory: true })
+      getBridgeView({ showHistory: true, isZapEnabled: ZapEnabled })
     ) : (
       <TxHistoryV2 />
     );
-  }, [UIRefreshV3Enabled, getBridgeView]);
+  }, [UIRefreshV3Enabled, getBridgeView, ZapEnabled]);
 
   return (
     <Box
@@ -119,15 +117,12 @@ const AppRouterContent = () => {
       }}
     >
       <SvgDefs />
-      {UIRefreshV3Enabled && ZapEnabled && <TabSelector />}
-      {route === 'bridge' && getBridgeView({ showHistory: false })}
+      {route === 'bridge' &&
+        getBridgeView({ showHistory: false, isZapEnabled: ZapEnabled })}
       {route === 'redeem' && redeemView}
       {route === 'history' && txHistoryView}
       {route === 'search' && <TxSearch />}
       {route === 'terms' && <Terms />}
-      {route === 'zap' && UIRefreshV3Enabled && ZapEnabled && (
-        <ZapV3 showHistory={false} />
-      )}
     </Box>
   );
 };
