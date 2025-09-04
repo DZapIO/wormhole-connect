@@ -81,8 +81,6 @@ function AssetPickerDrawer({
   const theme = useTheme();
   const [activeTab, setActiveTab] = useState<'tokens' | 'pools'>('tokens');
 
-  // Debug logging
-
   const handleTabChange = (
     event: React.SyntheticEvent,
     newValue: 'tokens' | 'pools',
@@ -151,8 +149,8 @@ function AssetPickerDrawer({
               },
             }}
           >
-            <Tab label="Tokens" />
-            <Tab label="Protocols" />
+            <Tab label="Tokens" value="tokens" />
+            <Tab label="Pools" value="pools" />
           </Tabs>
 
           {/* Tab Content */}
