@@ -133,7 +133,7 @@ function AssetPickerDrawer({
       />
 
       {/* Conditional rendering based on whether tabs are enabled (Zap mode) */}
-      {!showChainSearch && showTabs && (
+      {!showChainSearch && showTabs && chainConfig && (
         <>
           <Tabs
             value={activeTab}
