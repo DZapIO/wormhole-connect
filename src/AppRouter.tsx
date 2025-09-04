@@ -45,6 +45,7 @@ const AppRouterContent = () => {
   const { hasExternalSearch } = useExternalSearch();
 
   const UIRefreshV3Enabled = getExperiment('enableUIRefreshV3');
+  const ZapEnabled = getExperiment('enableZap');
 
   useEffect(() => {
     const redeemRoute = 'redeem';
@@ -64,14 +65,7 @@ const AppRouterContent = () => {
       (route === zapRoute && prevRoute === bridgeRoute);
 
     if (
-      isEnteringBridge &&
-      prevRoute !== 'history' &&
-      !isSwitchingBetweenBridgeAndZap
-    ) {
-      dispatch(clearTransfer());
-    }
-    if (
-      isEnteringZap &&
+      (isEnteringBridge || isEnteringZap) &&
       prevRoute !== 'history' &&
       !isSwitchingBetweenBridgeAndZap
     ) {
@@ -108,13 +102,6 @@ const AppRouterContent = () => {
     );
   }, [UIRefreshV3Enabled, getBridgeView]);
 
-  const handleTabChange = useCallback(
-    (route: 'bridge' | 'zap') => {
-      dispatch(setRoute(route));
-    },
-    [dispatch],
-  );
-
   return (
     <Box
       sx={{
@@ -132,13 +119,15 @@ const AppRouterContent = () => {
       }}
     >
       <SvgDefs />
-      {UIRefreshV3Enabled && <TabSelector onTabChange={handleTabChange} />}
+      {UIRefreshV3Enabled && ZapEnabled && <TabSelector />}
       {route === 'bridge' && getBridgeView({ showHistory: false })}
       {route === 'redeem' && redeemView}
       {route === 'history' && txHistoryView}
       {route === 'search' && <TxSearch />}
       {route === 'terms' && <Terms />}
-      {route === 'zap' && UIRefreshV3Enabled && <ZapV3 showHistory={false} />}
+      {route === 'zap' && UIRefreshV3Enabled && ZapEnabled && (
+        <ZapV3 showHistory={false} />
+      )}
     </Box>
   );
 };

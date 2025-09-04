@@ -1,14 +1,22 @@
 import { Box, Tab, Tabs, useTheme } from '@mui/material';
-import React, { useMemo } from 'react';
-import { useSelector } from 'react-redux';
+import React, { useCallback, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from 'store';
-interface TabSelectorProps {
-  onTabChange?: (route: 'bridge' | 'zap') => void;
-}
+import { setRoute } from 'store/router';
 
-const TabSelector: React.FC<TabSelectorProps> = ({ onTabChange }) => {
+const TabSelector = () => {
   const theme: any = useTheme();
   const route = useSelector((state: RootState) => state.router.route);
+
+  const dispatch = useDispatch();
+
+  const handleTabChange = useCallback(
+    (_event: React.SyntheticEvent, newValue: string) => {
+      const newRoute = newValue as 'bridge' | 'zap';
+      dispatch(setRoute(newRoute));
+    },
+    [dispatch],
+  );
 
   const styles = useMemo(
     () => ({
@@ -50,11 +58,6 @@ const TabSelector: React.FC<TabSelectorProps> = ({ onTabChange }) => {
     }),
     [theme],
   );
-
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: string) => {
-    const newRoute = newValue as 'bridge' | 'zap';
-    onTabChange?.(newRoute);
-  };
 
   return (
     <Box sx={styles.container}>

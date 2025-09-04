@@ -45,7 +45,7 @@ export type TestOptions = {
   enableHeadlessSigner?: boolean;
 };
 
-export type Experiments = 'enableUIRefreshV3';
+export type Experiments = 'enableUIRefreshV3' | 'enableZap';
 export type Experimental = {
   [Experiment in Experiments]?: boolean;
 };
@@ -86,9 +86,7 @@ export function createUiConfig(customConfig: UiConfig): UiConfig {
   return {
     ...customConfig,
     showFooter: customConfig.showFooter ?? true, // Footer is shown by default if not specified
-    experimental: customConfig.experimental ?? {
-      enableUIRefreshV3: true,
-    },
+    experimental: customConfig.experimental ?? {},
     walletConnectProjectId:
       customConfig?.walletConnectProjectId ??
       import.meta.env.REACT_APP_WALLET_CONNECT_PROJECT_ID,
