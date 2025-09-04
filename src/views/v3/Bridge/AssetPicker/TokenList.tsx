@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { Fragment, useMemo } from 'react';
 import { Box, Card, CardContent, Skeleton, useTheme } from '@mui/material';
 import CircularProgress from '@mui/material/CircularProgress';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -14,6 +14,8 @@ import config from 'config';
 import { useTokens } from 'contexts/TokensContext';
 import type { Balances } from 'utils/wallet/types';
 import { useTokenListWithSearch } from 'hooks/useTokenListWithSearch';
+import TokenSectionHeader from './TokenSectionHeader';
+import { useTokenListGrouping } from 'hooks/useTokenListGrouping';
 
 type Props = {
   tokenList: Array<Token>;
@@ -102,11 +104,6 @@ const TokenList = (props: Props) => {
 
   // Determine the current state of the token list
   const listState = useMemo(() => {
-    // For source list, require wallet to show balances/tokens from wallet
-    if (props.isSource && !props.wallet?.address && !props.isConnectingWallet) {
-      return 'empty';
-    }
-
     // Currently fetching initial data
     if (props.isFetching) {
       return 'loading';
@@ -119,16 +116,21 @@ const TokenList = (props: Props) => {
 
     // Normal state - show the token list
     return 'ready';
-  }, [
-    props.isSource,
-    props.wallet?.address,
-    props.isConnectingWallet,
-    props.isFetching,
-    sortedTokens.length,
-  ]);
+  }, [props.isFetching, sortedTokens.length]);
 
   const shouldShowLoadingState = listState === 'loading';
   const shouldShowEmptyMessage = listState === 'empty';
+
+  // Build sectioned list for source picker when not searching
+  const isGroupingEnabled = props.isSource && !props.searchQuery;
+  const isWalletConnected = Boolean(props.wallet?.address);
+
+  const { listItems, ownedCount } = useTokenListGrouping({
+    sortedTokens,
+    isWalletConnected,
+    isGroupingEnabled,
+    balances: props.balances,
+  });
 
   const searchList = (
     <SearchableList<Token>
@@ -136,21 +138,7 @@ const TokenList = (props: Props) => {
       sx={styles.tokenList}
       dataTestId="token-search-list"
       searchQuery={props.searchQuery}
-      listTitle={
-        shouldShowEmptyMessage ? (
-          emptyMessage
-        ) : (
-          <Box display="flex" width="100%">
-            <Typography
-              style={{ flexGrow: '2' }}
-              fontSize={14}
-              color={theme.palette.text.secondary}
-            >
-              Tokens on {props.selectedChainConfig.displayName}
-            </Typography>
-          </Box>
-        )
-      }
+      listTitle={shouldShowEmptyMessage ? emptyMessage : ''}
       loading={
         shouldShowLoadingState &&
         [1, 2, 3].map((x) => (
@@ -161,11 +149,11 @@ const TokenList = (props: Props) => {
           </ListItemButton>
         ))
       }
-      items={sortedTokens}
+      items={listItems}
       onQueryChange={(query) => {
         props.onSearchQueryChange(query);
       }}
-      renderFn={(token: Token) => {
+      renderFn={(token: Token, index: number) => {
         const balance = props.balances?.[token.key]?.balance;
         const tokenPrice = tokenPrices.get(token.key);
         const price =
@@ -173,20 +161,30 @@ const TokenList = (props: Props) => {
             ? getUSDFormat(calculateUSDPriceRaw(tokenPrice, balance, token))
             : null;
 
+        // Do not dim when no wallet is connected
+        const isRestSection =
+          isGroupingEnabled && isWalletConnected && index >= ownedCount;
+
         return (
-          <TokenItem
-            key={token.key}
-            token={token}
-            chain={props.selectedChainConfig.sdkName}
-            onClick={() => {
-              props.onSelectToken(token);
-            }}
-            isSource={props.isSource}
-            balance={balance}
-            price={price}
-            isSelected={token.key === props.selectedToken?.key}
-            isFetchingBalance={props.isFetchingBalances}
-          />
+          <Fragment key={token.key}>
+            <TokenSectionHeader
+              index={index}
+              ownedCount={ownedCount}
+              isGroupingEnabled={isGroupingEnabled}
+            />
+            <TokenItem
+              key={token.key}
+              token={token}
+              chain={props.selectedChainConfig.sdkName}
+              onClick={() => props.onSelectToken(token)}
+              isSource={props.isSource}
+              balance={balance}
+              price={price}
+              isSelected={token.key === props.selectedToken?.key}
+              isFetchingBalance={props.isFetchingBalances}
+              isDimmed={isRestSection}
+            />
+          </Fragment>
         );
       }}
     />
@@ -196,9 +194,6 @@ const TokenList = (props: Props) => {
     <Card sx={styles.card} variant="elevation">
       <CardContent sx={styles.tokenListContainer}>
         <Box sx={{ display: 'flex', padding: '0 16px' }}>
-          <Typography width="100%" sx={styles.title}>
-            Select a token
-          </Typography>
           {isFetchingToken || props.isFetchingBalances ? (
             <CircularProgress
               sx={{ alignSelf: 'flex-end', marginBottom: '12px' }}
