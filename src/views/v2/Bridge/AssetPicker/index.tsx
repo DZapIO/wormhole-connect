@@ -27,6 +27,10 @@ import AssetBadge from 'components/AssetBadge';
 import type { Token } from 'config/tokens';
 import { useTokenList } from 'hooks/useTokenList';
 import { getTokenSymbol } from 'utils';
+import {
+  handleTelemetryOnChainSelect,
+  handleTelemetryOnTokenSelect,
+} from 'telemetry/utils';
 
 type Props = {
   chain?: Chain | undefined;
@@ -270,6 +274,7 @@ const AssetPicker = (props: Props) => {
             setShowSearch={setShowChainSearch}
             wallet={props.wallet}
             onChainSelect={(key) => {
+              handleTelemetryOnChainSelect(key, props.isSource);
               props.setChain(key);
               setSearchQuery('');
             }}
@@ -290,6 +295,8 @@ const AssetPicker = (props: Props) => {
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
               onSelectToken={(key: Token) => {
+                handleTelemetryOnTokenSelect(key, props.isSource);
+                handleTelemetryOnChainSelect(key.chain, props.isSource);
                 props.setToken(key);
                 setIsDrawerOpen(false);
               }}
@@ -323,6 +330,7 @@ const AssetPicker = (props: Props) => {
             setShowSearch={setShowChainSearch}
             wallet={props.wallet}
             onChainSelect={(key) => {
+              handleTelemetryOnChainSelect(key, props.isSource);
               props.setChain(key);
               setSearchQuery('');
             }}
@@ -343,6 +351,8 @@ const AssetPicker = (props: Props) => {
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
               onSelectToken={(key: Token) => {
+                handleTelemetryOnTokenSelect(key, props.isSource);
+                handleTelemetryOnChainSelect(key.chain, props.isSource);
                 props.setToken(key);
                 popupState.close();
               }}
